@@ -1,0 +1,1 @@
+{"root":["./src/App.tsx","./src/main.tsx","./src/components/AgentBoard.tsx","./src/components/Dashboard.tsx","./src/components/DebugLog.tsx","./src/components/TaskFlow.tsx","./src/components/WorkflowVisualization.tsx"],"version":"5.9.3"}

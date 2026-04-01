@@ -1,0 +1,21 @@
+{
+  "mcpServers": {},
+  "customInstructions": "You are helping develop AgentForge, a multi-agent AI orchestration system. Use the CLAUDE.md file as context for the project structure and goals.",
+  "permissions": {
+    "allowBash": true,
+    "allowWrite": true,
+    "allowEdit": true,
+    "allowGit": true
+  },
+  "sandboxMode": "enabled",
+  "hooks": {
+    "onFileChange": [],
+    "onDirectoryCreate": [],
+    "onGitCommit": []
+  },
+  "environment": {
+    "BACKEND_URL": "http://localhost:8000",
+    "SPACETIMEDB_URL": "http://localhost:8080",
+    "FRONTEND_URL": "http://localhost:5173"
+  }
+}

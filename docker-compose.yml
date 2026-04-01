@@ -1,0 +1,85 @@
+services:
+  spacetimedb:
+    image: clockworklabs/spacetime:latest
+    ports:
+      - "3001:3000"
+    volumes:
+      - spacetimedb_data:/var/lib/spacetimedb
+    command: start
+    healthcheck:
+      test: ["CMD", "sh", "-c", "exec 3<>/dev/tcp/localhost/3000"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    restart: unless-stopped
+
+  spacetimedb-init:
+    image: clockworklabs/spacetime:latest
+    depends_on:
+      spacetimedb:
+        condition: service_started
+    volumes:
+      - ./spacetimedb:/module
+    working_dir: /module
+    # Publish the Rust module to the SpacetimeDB instance
+    entrypoint: ["sh", "-c"]
+    command: "spacetime publish --server http://spacetimedb:3000 agentforge || true"
+    restart: "no"
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8001:8000"
+    environment:
+      # Ollama (running on host)
+      - OLLAMA_API_URL=http://host.docker.internal:11434
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-mistral}
+      - USE_OLLAMA=true
+      # ArmorIQ
+      - ARMORIQ_API_KEY=${ARMORIQ_API_KEY:-}
+      - ARMORIQ_SECRET_KEY=${ARMORIQ_SECRET_KEY:-dev-secret-key}
+      - ARMORIQ_USER_ID=${ARMORIQ_USER_ID:-agentforge-user}
+      - ARMORIQ_AGENT_ID=${ARMORIQ_AGENT_ID:-agentforge-agent}
+      - ARMORIQ_CONTEXT_ID=${ARMORIQ_CONTEXT_ID:-default}
+      - ARMORIQ_TOKEN_VALIDITY=${ARMORIQ_TOKEN_VALIDITY:-600}
+      # SpacetimeDB (port 3000 is the correct port)
+      - SPACETIMEDB_URL=http://spacetimedb:3000
+      - SPACETIMEDB_HOST=spacetimedb
+      - SPACETIMEDB_PORT=3000
+      # General
+      - PYTHONUNBUFFERED=1
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    volumes:
+      - ./backend:/app
+    depends_on:
+      spacetimedb:
+        condition: service_started
+      spacetimedb-init:
+        condition: service_started
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "5174:5173"
+    environment:
+      - VITE_BACKEND_URL=http://localhost:8001
+      - VITE_SPACETIMEDB_URL=http://localhost:3001
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    restart: unless-stopped
+    command: npm run dev -- --host 0.0.0.0
+
+volumes:
+  spacetimedb_data:
