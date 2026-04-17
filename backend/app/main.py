@@ -7,6 +7,8 @@ logging.basicConfig(
 
 from fastapi import FastAPI, WebSocket, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from typing import Optional, Dict, Any, List
 import os
@@ -976,6 +978,12 @@ async def shutdown_event():
     print("Shutting down AgentForge backend...")
     await shutdown_armoriq()
     print("ArmorIQ shutdown complete")
+
+# Serve built React frontend — fallback for all unmatched paths (SPA routing).
+# API and WebSocket routes registered above take priority due to FULL match.
+_FRONTEND_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "frontend_dist")
+if os.path.exists(_FRONTEND_DIR):
+    app.mount("/", StaticFiles(directory=_FRONTEND_DIR, html=True), name="frontend")
 
 if __name__ == "__main__":
     import uvicorn
