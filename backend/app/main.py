@@ -106,13 +106,10 @@ async def _broadcast_users_count():
 
 @app.get("/")
 async def root():
-    return {
-        "service": "AgentForge Backend",
-        "version": "0.1.0",
-        "status": "running",
-        "docs": "/docs",
-        "health": "/health",
-    }
+    index_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "frontend_dist", "index.html")
+    if os.path.exists(index_file):
+        return FileResponse(index_file)
+    return {"service": "AgentForge Backend", "version": "0.1.0", "status": "running", "docs": "/docs", "health": "/health"}
 
 @app.get("/health")
 async def health():
