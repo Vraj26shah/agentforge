@@ -54,6 +54,6 @@ services:
     plan: free
     envVars:
       - key: VITE_BACKEND_URL
-        value: https://agentforges.onrender.com
+        value: https://agentforge-backend.onrender.com
       - key: VITE_SPACETIMEDB_URL
         value: http://localhost:3001
