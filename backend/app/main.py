@@ -99,7 +99,17 @@ async def _broadcast_users_count():
         "connected_users": len(active_websockets),
     })
 
-# ── Health check ───────────────────────────────────────────────────────────────
+# ── Root + Health check ────────────────────────────────────────────────────────
+
+@app.get("/")
+async def root():
+    return {
+        "service": "AgentForge Backend",
+        "version": "0.1.0",
+        "status": "running",
+        "docs": "/docs",
+        "health": "/health",
+    }
 
 @app.get("/health")
 async def health():
