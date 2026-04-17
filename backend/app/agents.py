@@ -169,13 +169,20 @@ class Agent:
                 except Exception as e:
                     logger.warning("[%s] Gemini/%s failed: %s", self.name, model, str(e))
                     last_err = e
-            # Always fall back to Ollama — even for large prompts — when all Gemini models fail.
-            # This handles 429 quota exhaustion gracefully without aborting the pipeline.
-            logger.warning(
-                "[%s] All Gemini models failed (%s) — falling back to Ollama",
-                self.name, str(last_err)
-            )
-            return await self._call_ollama(prompt)
+            # Truncate prompt for Ollama fallback — large prompts (>4KB) cause timeouts
+            # on small models like qwen2:0.5b. Keep first 3KB to preserve instructions.
+            truncated_prompt = prompt[:3000] if len(prompt) > 4000 else prompt
+            if len(prompt) > 4000:
+                logger.warning(
+                    "[%s] All Gemini models failed (%s) — falling back to Ollama with truncated prompt (%d → %d chars)",
+                    self.name, str(last_err), len(prompt), len(truncated_prompt)
+                )
+            else:
+                logger.warning(
+                    "[%s] All Gemini models failed (%s) — falling back to Ollama",
+                    self.name, str(last_err)
+                )
+            return await self._call_ollama(truncated_prompt)
         else:
             try:
                 return await self._call_ollama(prompt)

@@ -1,0 +1,66 @@
+services:
+  # Backend API
+  - type: web
+    name: agentforge-backend
+    env: docker
+    dockerfilePath: ./backend/Dockerfile.prod
+    dockerContext: ./backend
+    plan: starter
+    healthCheckPath: /health
+    envVars:
+      - key: OLLAMA_API_URL
+        value: http://host.docker.internal:11434
+      - key: OLLAMA_MODEL
+        value: qwen2:0.5b
+      - key: USE_OLLAMA
+        value: true
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: ARMORIQ_API_KEY
+        sync: false
+      - key: ARMORIQ_SECRET_KEY
+        sync: false
+      - key: SPACETIMEDB_URL
+        fromService:
+          type: web
+          name: agentforge-spacetimedb
+          property: host
+      - key: LOG_LEVEL
+        value: INFO
+      - key: PYTHONUNBUFFERED
+        value: "1"
+
+  # Frontend
+  - type: web
+    name: agentforge-frontend
+    env: docker
+    dockerfilePath: ./frontend/Dockerfile.prod
+    dockerContext: ./frontend
+    plan: starter
+    buildCommand: npm run build
+    envVars:
+      - key: VITE_BACKEND_URL
+        fromService:
+          type: web
+          name: agentforge-backend
+          property: host
+      - key: VITE_SPACETIMEDB_URL
+        fromService:
+          type: web
+          name: agentforge-spacetimedb
+          property: host
+
+  # SpacetimeDB
+  - type: web
+    name: agentforge-spacetimedb
+    env: docker
+    dockerImage: clockworklabs/spacetime:latest
+    plan: starter
+    disk:
+      name: spacetimedb-data
+      mountPath: /var/lib/spacetimedb
+      sizeGB: 10
+
+databases:
+  - name: spacetimedb-data
+    plan: starter

@@ -396,6 +396,9 @@ async def process_task_with_armoriq(
         task["status"] = final_status
         task["orchestration_result"] = orchestration_result
         task["updated_at"] = datetime.utcnow().isoformat()
+        task["progress"] = 100 if final_status == "completed" else 50
+        task["report"] = orchestration_result.get("report", "")
+        task["judgment"] = orchestration_result.get("judgment", {})
 
         # Handle error status with failed_step information
         blocked_reason = None
@@ -407,7 +410,7 @@ async def process_task_with_armoriq(
 
         await db.update_task(task_id, {
             "status": final_status,
-            "progress": 100 if final_status == "completed" else 50,
+            "progress": task["progress"],
             "blocked_reason": blocked_reason,
         })
 
@@ -485,9 +488,12 @@ async def get_task(task_id: str):
     response = details.dict()
     response["user_id"] = task.get("user_id", "anonymous")
     response["task_type"] = task.get("task_type", "general")
+    response["progress"] = task.get("progress", 0)
     response["report"] = task.get("report", "")
     response["suggested_content"] = task.get("suggested_content", "")
     response["diff_lines"] = task.get("diff_lines", [])
+    response["judgment"] = task.get("judgment", {})
+    response["file_path"] = task.get("file_path")
     return response
 
 @app.get("/api/plans")
@@ -766,7 +772,9 @@ async def process_code_suggestion_task(
         final_status = orchestration_result.get("status", "completed")
         task["status"] = final_status
         task["updated_at"] = datetime.utcnow().isoformat()
+        task["progress"] = 100 if final_status == "completed" else 50
         task["report"] = orchestration_result.get("report", "")
+        task["judgment"] = orchestration_result.get("judgment", {})
         if task_type == "code_suggestion":
             task["suggested_content"] = orchestration_result.get("suggested_content", "")
             task["diff_lines"] = orchestration_result.get("diff_lines", [])
@@ -774,7 +782,7 @@ async def process_code_suggestion_task(
         update_payload: Dict[str, Any] = {
             "id": task_id,
             "status": final_status,
-            "progress": 100 if final_status == "completed" else 50,
+            "progress": task["progress"],
             "report": orchestration_result.get("report", ""),
             "user_id": user_id,
             "judgment": orchestration_result.get("judgment", {}),
