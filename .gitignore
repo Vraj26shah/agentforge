@@ -29,6 +29,10 @@ frontend/tsconfig.tsbuildinfo
 .env.local
 .env.*.local
 
+# Claude Code
+.claude/
+claude/
+
 # Editor / OS
 .DS_Store
 Thumbs.db

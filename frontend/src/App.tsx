@@ -264,104 +264,75 @@ export default function App() {
   useEffect(() => {
     let ws: WebSocket | null = null
     let retryTimer: ReturnType<typeof setTimeout>
+    let attempt = 0
 
-    const connect = () => {
+    const openWS = () => {
       try {
-        const backendUrl = `${BACKEND_WS}/ws/updates?session_id=${SESSION_ID}`
-        console.log('Connecting WebSocket to:', backendUrl)
-        ws = new WebSocket(backendUrl)
+        ws = new WebSocket(`${BACKEND_WS}/ws/updates?session_id=${SESSION_ID}`)
 
         ws.onopen = () => {
+          attempt = 0
           setConnected(true)
           setError(null)
           addLog('success', 'WebSocket connected to backend')
-          console.log('WebSocket connected')
         }
 
         ws.onmessage = (e) => {
           try {
             const data = JSON.parse(e.data)
-
-            // Existing tasks snapshot on fresh connect
-            if (data.type === 'existing_tasks') {
-              setTasks(data.tasks as Task[])
-              return
-            }
-
-            // Live user count updates
-            if (data.type === 'users_update') {
-              setLiveUsers(data.connected_users as number)
-              return
-            }
-
-            // Task progress updates (real-time 0-100%)
+            if (data.type === 'existing_tasks') { setTasks(data.tasks as Task[]); return }
+            if (data.type === 'users_update')   { setLiveUsers(data.connected_users as number); return }
             if (data.type === 'task_progress') {
               setTasks(prev => {
                 const exists = prev.find(t => t.id === data.task_id)
                 return exists
-                  ? prev.map(t => t.id === data.task_id
-                      ? { ...t, progress: data.progress, status: data.status }
-                      : t)
-                  : [...prev, {
-                      id: data.task_id,
-                      user_request: `Step: ${data.step}`,
-                      status: data.status,
-                      created_at: new Date().toISOString(),
-                      progress: data.progress,
-                    }]
+                  ? prev.map(t => t.id === data.task_id ? { ...t, progress: data.progress, status: data.status } : t)
+                  : [...prev, { id: data.task_id, user_request: `Step: ${data.step}`, status: data.status, created_at: new Date().toISOString(), progress: data.progress }]
               })
             }
-
-            // Full task updates
             if (data.type === 'task_update') {
               setTasks(prev => {
                 const exists = prev.find(t => t.id === data.task.id)
-                return exists
-                  ? prev.map(t => t.id === data.task.id ? { ...t, ...data.task } : t)
-                  : [...prev, data.task]
+                return exists ? prev.map(t => t.id === data.task.id ? { ...t, ...data.task } : t) : [...prev, data.task]
               })
               addLog('info', `Task ${data.task.id} — ${data.task.status}`, data.task.id)
             }
-
-            // Agent status updates with provider info
             if (data.type === 'agent_update') {
               setAgents(prev => {
                 const exists = prev.find(a => a.id === data.agent.id)
-                return exists
-                  ? prev.map(a => a.id === data.agent.id ? { ...a, ...data.agent } : a)
-                  : [...prev, data.agent]
+                return exists ? prev.map(a => a.id === data.agent.id ? { ...a, ...data.agent } : a) : [...prev, data.agent]
               })
             }
-
-            // Security events
-            if (data.type === 'security_event') {
-              addLog(data.severity === 'blocked' ? 'error' : 'security', data.message, data.task_id)
-            }
-
-            // Execution logs
-            if (data.type === 'log') {
-              addLog(data.level || 'info', data.message, data.task_id)
-            }
+            if (data.type === 'security_event') { addLog(data.severity === 'blocked' ? 'error' : 'security', data.message, data.task_id) }
+            if (data.type === 'log') { addLog(data.level || 'info', data.message, data.task_id) }
           } catch { /* ignore parse errors */ }
         }
 
-        ws.onerror = (ev) => {
-          console.error('WebSocket error:', ev)
-          setConnected(false)
-          setError('WebSocket connection error')
-          addLog('error', 'WebSocket connection error')
-        }
+        ws.onerror = () => { setConnected(false) }
 
         ws.onclose = () => {
           setConnected(false)
-          addLog('warning', 'WebSocket disconnected — retrying in 3s')
-          retryTimer = setTimeout(connect, 3000)
+          const delay = Math.min(3000 * Math.pow(1.5, attempt), 30000)
+          attempt++
+          retryTimer = setTimeout(connect, delay)
         }
       } catch (e) {
-        console.error('Failed to establish WebSocket connection:', e)
-        setError(`WebSocket error: ${e}`)
-        addLog('error', `Failed to establish WebSocket connection: ${e}`)
+        addLog('error', `WebSocket setup failed: ${e}`)
+        retryTimer = setTimeout(connect, 5000)
       }
+    }
+
+    const connect = () => {
+      // HTTP ping first — wakes the service on Render free tier before WebSocket upgrade.
+      // A sleeping service will reject the WS upgrade but responds to HTTP once awake.
+      fetch(`${BACKEND_HTTP}/health`)
+        .then(openWS)
+        .catch(() => {
+          const delay = Math.min(5000 * Math.pow(1.5, attempt), 30000)
+          attempt++
+          addLog('warning', `Backend waking up — retrying in ${Math.round(delay / 1000)}s`)
+          retryTimer = setTimeout(connect, delay)
+        })
     }
 
     connect()
