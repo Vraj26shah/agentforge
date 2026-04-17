@@ -10,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional, Dict, Any, List
 import os
+import asyncio
 from dotenv import load_dotenv
 import uuid
 from datetime import datetime
@@ -933,9 +934,17 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = "anonymous"
         # Broadcast live user count to all clients
         await _broadcast_users_count()
 
+        # Keepalive loop — send a heartbeat every 30s so Render's proxy
+        # doesn't close the idle connection (60s timeout on free tier).
         while True:
-            data = await websocket.receive_text()
-            await websocket.send_json({"type": "pong", "data": data})
+            try:
+                data = await asyncio.wait_for(websocket.receive_text(), timeout=30.0)
+                await websocket.send_json({"type": "pong", "data": data})
+            except asyncio.TimeoutError:
+                await websocket.send_json({
+                    "type": "heartbeat",
+                    "timestamp": datetime.utcnow().isoformat(),
+                })
     except Exception as e:
         print(f"WebSocket error: {e}")
     finally:
