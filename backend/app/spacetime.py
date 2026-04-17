@@ -93,6 +93,7 @@ class SpacetimeDB:
             task["user_request"],
             json.dumps(task.get("tool_plan", [])),
             task.get("intent_hash"),
+            task.get("user_id", "anonymous"),
         ])
 
     async def update_task(self, task_id: str, updates: Dict[str, Any]) -> bool:

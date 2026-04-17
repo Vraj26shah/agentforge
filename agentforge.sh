@@ -1,683 +1,775 @@
 #!/bin/bash
 
-################################################################################
-#                    🎯 AGENTFORGE - MASTER CONTROL SCRIPT
-#
-# Complete management system for AgentForge project
-# Handles: Start | Stop | Destroy | Status | Test | Logs | Diagnose | Control
-#
-# Works on: Linux, macOS, Windows (WSL/Git Bash)
-# Requirements: bash, docker, docker-compose, curl
-#
-# Usage: ./agentforge.sh [COMMAND] [OPTIONS]
-#
-# Commands:
-#   start       → Start all services (build if needed)
-#   stop        → Stop all running services (keep data)
-#   destroy     → Completely destroy everything (delete containers, volumes, data)
-#   status      → Show current service status
-#   logs        → Stream service logs (specify: backend, frontend, spacetimedb, all)
-#   test        → Run all tests (health, api, security)
-#   diagnose    → Run diagnostic checks
-#   clean       → Clean Docker resources (containers, images, volumes)
-#   help        → Show this help message
-#
-# Examples:
-#   ./agentforge.sh start              # Start all services
-#   ./agentforge.sh stop               # Stop services
-#   ./agentforge.sh destroy            # Nuke everything
-#   ./agentforge.sh test               # Run all tests
-#   ./agentforge.sh logs backend       # Watch backend logs
-#   ./agentforge.sh status             # Check status
-#
-################################################################################
+# ═══════════════════════════════════════════════════════════════
+# AgentForge - Unified Management Script
+# Single script for verify, setup, and demo operations
+# ═══════════════════════════════════════════════════════════════
 
-set -o pipefail
+set -e
 
-# Ensure this script runs with bash (not sh)
-if [ -z "$BASH" ]; then
-    echo "⚠️  This script requires bash. Please run with: bash agentforge.sh"
-    exit 1
-fi
-
-# Get script directory
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR"
-
-# ─────────────────────────────────────────────────────────────────────────────
-# COLOR DEFINITIONS
-# ─────────────────────────────────────────────────────────────────────────────
-
-RED='\033[0;31m'
+# Color codes
 GREEN='\033[0;32m'
+RED='\033[0;31m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
-MAGENTA='\033[0;35m'
-CYAN='\033[0;36m'
-WHITE='\033[1;37m'
-NC='\033[0m'  # No Color
+NC='\033[0m' # No Color
 
-# ─────────────────────────────────────────────────────────────────────────────
-# UTILITY FUNCTIONS
-# ─────────────────────────────────────────────────────────────────────────────
+# ═══════════════════════════════════════════════════════════════
+# Helper Functions
+# ═══════════════════════════════════════════════════════════════
+
+load_env() {
+    if [ -f .env ]; then
+        set -a
+        source .env
+        set +a
+        return 0
+    else
+        return 1
+    fi
+}
 
 print_header() {
     echo ""
-    echo -e "${BLUE}╔════════════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${BLUE}║  $1${NC}"
-    echo -e "${BLUE}╚════════════════════════════════════════════════════════════════╝${NC}"
+    echo -e "${BLUE}═══════════════════════════════════════════════════════════════${NC}"
+    echo -e "${BLUE}$1${NC}"
+    echo -e "${BLUE}═══════════════════════════════════════════════════════════════${NC}"
     echo ""
 }
 
-print_section() {
-    echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    echo -e "${MAGENTA}▸ $1${NC}"
-    echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+check_file() {
+    local file=$1
+    local description=$2
+
+    if [ -f "$file" ]; then
+        echo -e "${GREEN}✓${NC} $description"
+        return 0
+    else
+        echo -e "${RED}✗${NC} $description - MISSING: $file"
+        return 1
+    fi
 }
 
-print_success() {
-    echo -e "${GREEN}✅ $1${NC}"
+check_dir() {
+    local dir=$1
+    local description=$2
+
+    if [ -d "$dir" ]; then
+        echo -e "${GREEN}✓${NC} $description"
+        return 0
+    else
+        echo -e "${RED}✗${NC} $description - MISSING: $dir"
+        return 1
+    fi
 }
 
-print_error() {
-    echo -e "${RED}❌ $1${NC}"
+check_env() {
+    local var=$1
+    local description=$2
+
+    if [ -z "${!var}" ]; then
+        echo -e "${YELLOW}⚠${NC} $description - Not set"
+        return 1
+    else
+        echo -e "${GREEN}✓${NC} $description - Set"
+        return 0
+    fi
 }
 
-print_warning() {
-    echo -e "${YELLOW}⚠️  $1${NC}"
+check_command() {
+    local cmd=$1
+    local description=$2
+
+    if command -v $cmd &> /dev/null; then
+        if [ "$cmd" = "docker-compose" ] || [ "$cmd" = "docker" ] || [ "$cmd" = "python3" ] || [ "$cmd" = "node" ]; then
+            local version=$($cmd --version 2>&1 | head -1)
+            echo -e "${GREEN}✓${NC} $description ($version)"
+        else
+            echo -e "${GREEN}✓${NC} $description"
+        fi
+        return 0
+    else
+        echo -e "${RED}✗${NC} $description not installed"
+        return 1
+    fi
 }
 
-print_info() {
-    echo -e "${BLUE}ℹ️  $1${NC}"
+check_docker_daemon() {
+    if ! docker ps &> /dev/null; then
+        return 1
+    fi
+    return 0
 }
 
-print_item() {
-    echo -e "${WHITE}   • $1${NC}"
+# ═══════════════════════════════════════════════════════════════
+# VERIFY Command
+# ═══════════════════════════════════════════════════════════════
+
+cmd_verify() {
+    print_header "AgentForge Project Verification"
+
+    ERRORS=0
+    WARNINGS=0
+
+    # Load environment
+    if load_env; then
+        echo -e "${GREEN}✓${NC} Loaded environment from .env"
+    else
+        echo -e "${YELLOW}⚠${NC} .env file not found - skipping env checks"
+        WARNINGS=$((WARNINGS + 1))
+    fi
+    echo ""
+
+    # Check project structure
+    echo "📁 Checking project structure..."
+    echo ""
+    check_file "CLAUDE.md" "Main documentation" || ERRORS=$((ERRORS + 1))
+    check_file ".env" "Environment configuration" || ERRORS=$((ERRORS + 1))
+    check_file "docker-compose.yml" "Docker Compose config" || ERRORS=$((ERRORS + 1))
+    echo ""
+
+    # Check backend files
+    echo "📦 Backend files..."
+    check_dir "backend" "Backend directory" || ERRORS=$((ERRORS + 1))
+    check_file "backend/Dockerfile" "Backend Dockerfile" || ERRORS=$((ERRORS + 1))
+    check_file "backend/requirements.txt" "Python dependencies" || ERRORS=$((ERRORS + 1))
+    check_file "backend/app/main.py" "FastAPI application" || ERRORS=$((ERRORS + 1))
+    check_file "backend/app/armoriq_integration.py" "ArmorIQ implementation" || ERRORS=$((ERRORS + 1))
+    check_file "backend/app/agents.py" "Agent definitions" || ERRORS=$((ERRORS + 1))
+    check_file "backend/app/orchestrator.py" "Task orchestrator" || ERRORS=$((ERRORS + 1))
+    check_file "backend/app/spacetime.py" "Database integration" || ERRORS=$((ERRORS + 1))
+    echo ""
+
+    # Check frontend files
+    echo "🎨 Frontend files..."
+    check_dir "frontend" "Frontend directory" || ERRORS=$((ERRORS + 1))
+    check_file "frontend/Dockerfile" "Frontend Dockerfile" || ERRORS=$((ERRORS + 1))
+    check_file "frontend/package.json" "Node dependencies" || ERRORS=$((ERRORS + 1))
+    check_file "frontend/vite.config.ts" "Vite config" || ERRORS=$((ERRORS + 1))
+    check_file "frontend/tailwind.config.js" "Tailwind config" || ERRORS=$((ERRORS + 1))
+    check_file "frontend/src/App.tsx" "React App component" || ERRORS=$((ERRORS + 1))
+    check_file "frontend/src/main.tsx" "React entry point" || ERRORS=$((ERRORS + 1))
+    check_file "frontend/src/components/Dashboard.tsx" "Dashboard component" || ERRORS=$((ERRORS + 1))
+    echo ""
+
+    # Check database files
+    echo "🗄️  Database files..."
+    check_dir "spacetimedb" "SpacetimeDB directory" || ERRORS=$((ERRORS + 1))
+    check_file "spacetimedb/Cargo.toml" "Rust dependencies" || ERRORS=$((ERRORS + 1))
+    check_file "spacetimedb/src/lib.ts" "Database schema" || ERRORS=$((ERRORS + 1))
+    echo ""
+
+    # Check scripts
+    echo "🛠️  Scripts..."
+    check_file "agentforge.sh" "Main management script" || ERRORS=$((ERRORS + 1))
+    echo ""
+
+    # Check configuration
+    echo "⚙️  Configuration..."
+    check_file "claude/settings.json" "Claude Code settings" || ERRORS=$((ERRORS + 1))
+    echo ""
+
+    # Check environment variables
+    echo "🌍 Environment variables from .env..."
+    echo ""
+    check_env "OLLAMA_API_URL" "Ollama API URL" || WARNINGS=$((WARNINGS + 1))
+    check_env "OLLAMA_MODEL" "Ollama Model" || WARNINGS=$((WARNINGS + 1))
+    check_env "GEMINI_API_KEY" "Gemini API Key" || WARNINGS=$((WARNINGS + 1))
+    check_env "ARMORIQ_API_KEY" "ArmorIQ API Key" || WARNINGS=$((WARNINGS + 1))
+    check_env "BACKEND_URL" "Backend URL" || WARNINGS=$((WARNINGS + 1))
+    check_env "FRONTEND_URL" "Frontend URL" || WARNINGS=$((WARNINGS + 1))
+    check_env "SPACETIMEDB_URL" "SpacetimeDB URL" || WARNINGS=$((WARNINGS + 1))
+    echo ""
+
+    # Check dependencies
+    echo "📚 Dependencies..."
+    echo ""
+    check_command "docker" "Docker" || ERRORS=$((ERRORS + 1))
+    check_command "docker-compose" "Docker Compose" || ERRORS=$((ERRORS + 1))
+    check_command "python3" "Python 3" || ERRORS=$((ERRORS + 1))
+    check_command "node" "Node.js" || WARNINGS=$((WARNINGS + 1))
+    echo ""
+
+    # Python syntax check
+    echo "🐍 Python syntax check..."
+    echo ""
+    if python3 -m py_compile backend/app/*.py 2>/dev/null; then
+        echo -e "${GREEN}✓${NC} All Python files are syntactically correct"
+    else
+        echo -e "${RED}✗${NC} Python syntax errors found"
+        ERRORS=$((ERRORS + 1))
+    fi
+    echo ""
+
+    # Summary
+    echo "═══════════════════════════════════════════════════════════════"
+    if [ $ERRORS -eq 0 ]; then
+        echo -e "${GREEN}✓ Verification Complete!${NC}"
+    else
+        echo -e "${RED}✗ Verification Failed! (Errors: $ERRORS)${NC}"
+    fi
+
+    if [ $WARNINGS -gt 0 ]; then
+        echo -e "${YELLOW}Warnings: $WARNINGS${NC}"
+    fi
+
+    echo ""
+    echo "Next: Run 'bash agentforge.sh setup' to initialize the project"
+    echo ""
+
+    return $ERRORS
 }
 
-# ─────────────────────────────────────────────────────────────────────────────
-# DEPENDENCY CHECK (after utility functions are defined)
-# ─────────────────────────────────────────────────────────────────────────────
+# ═══════════════════════════════════════════════════════════════
+# SETUP Command
+# ═══════════════════════════════════════════════════════════════
 
-check_dependencies() {
-    local missing=0
-    local deps=("docker" "curl")
+cmd_setup() {
+    print_header "AgentForge Setup & Initialization"
 
-    for cmd in "${deps[@]}"; do
-        if ! command -v "$cmd" &> /dev/null; then
-            print_error "Missing required command: $cmd"
-            ((missing++))
+    # Load environment
+    if ! load_env; then
+        echo -e "${RED}❌ .env file not found!${NC}"
+        echo "Please create .env file with required configuration."
+        return 1
+    fi
+
+    echo -e "${GREEN}✓${NC} Loaded environment from .env"
+    echo ""
+
+    # Check prerequisites
+    echo "🔍 Checking prerequisites..."
+    if ! command -v docker &> /dev/null; then
+        echo -e "${RED}❌ Docker is not installed. Please install Docker first.${NC}"
+        return 1
+    fi
+
+    if ! command -v docker-compose &> /dev/null; then
+        echo -e "${RED}❌ Docker Compose is not installed. Please install it.${NC}"
+        return 1
+    fi
+
+    echo -e "${GREEN}✓${NC} Docker and Docker Compose found"
+    echo ""
+
+    # Ensure Docker daemon is running (Linux specific)
+    echo "🔧 Ensuring Docker daemon is running..."
+    if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+        if ! check_docker_daemon; then
+            echo -e "${YELLOW}⚠${NC} Docker daemon not accessible. Attempting to start..."
+            if sudo systemctl is-active --quiet docker; then
+                echo -e "${GREEN}✓${NC} Docker daemon is running (via systemctl)"
+            else
+                echo "Attempting to start Docker daemon..."
+                if ! sudo systemctl start docker 2>/dev/null; then
+                    echo -e "${RED}❌ Could not start Docker daemon.${NC}"
+                    echo "Run manually: sudo systemctl start docker"
+                    return 1
+                fi
+                sleep 2
+                echo -e "${GREEN}✓${NC} Docker daemon started"
+            fi
+        else
+            echo -e "${GREEN}✓${NC} Docker daemon is accessible"
+        fi
+    else
+        if ! check_docker_daemon; then
+            echo -e "${RED}❌ Docker daemon is not running!${NC}"
+            echo "Please start Docker first:"
+            echo "   • Mac: Open 'Docker.app' from Applications"
+            echo "   • Windows: Open 'Docker Desktop' from Start Menu"
+            echo "After starting Docker, run: bash agentforge.sh setup"
+            return 1
+        fi
+        echo -e "${GREEN}✓${NC} Docker daemon is running"
+    fi
+    echo ""
+
+    # Verify environment configuration
+    echo "⚙️  Verifying environment configuration..."
+    REQUIRED_VARS=("OLLAMA_API_URL" "OLLAMA_MODEL" "GEMINI_API_KEY" "ARMORIQ_API_KEY" "BACKEND_URL" "FRONTEND_URL")
+
+    for var in "${REQUIRED_VARS[@]}"; do
+        if [ -z "${!var}" ]; then
+            echo -e "${RED}❌ Missing required variable: $var${NC}"
+            return 1
         fi
     done
 
-    if [ $missing -gt 0 ]; then
+    echo -e "${GREEN}✓${NC} All required environment variables are set"
+    echo ""
+
+    # Create directories
+    echo "📁 Creating project directories..."
+    mkdir -p backend/app spacetimedb/src frontend/src/{components}
+    echo -e "${GREEN}✓${NC} Directories created"
+    echo ""
+
+    # Clean up old containers and processes
+    echo "🧹 Cleaning up old containers and processes..."
+    echo ""
+
+    # Stop and remove old containers
+    if docker-compose ps 2>/dev/null | grep -q "agentforge"; then
+        echo "   Stopping existing containers..."
+        docker-compose down --remove-orphans 2>/dev/null || true
+        sleep 2
+    fi
+
+    # Remove dangling containers
+    echo "   Removing dangling containers..."
+    docker container prune -f --filter "until=1h" 2>/dev/null || true
+
+    # Kill any process on the required ports
+    echo "   Checking for processes on required ports..."
+    for port in 8000 5173 3000 3001; do
+        if lsof -Pi :$port -sTCP:LISTEN -t >/dev/null 2>&1; then
+            echo "   Found process on port $port, cleaning up..."
+            kill -9 $(lsof -t -i:$port) 2>/dev/null || true
+            sleep 1
+        fi
+    done
+
+    echo -e "${GREEN}✓${NC} Cleanup complete"
+    echo ""
+
+    # Start services
+    echo "🐳 Starting Docker services..."
+    echo "This may take a few minutes on first run..."
+    echo ""
+
+    if ! docker-compose up --build -d 2>&1 | tee /tmp/docker-compose.log; then
         echo ""
-        echo "Please install missing dependencies:"
-        echo "  - Docker: https://docs.docker.com/get-docker/"
-        echo "  - curl: usually included, or install from package manager"
+        echo -e "${RED}❌ Failed to start Docker services!${NC}"
+        echo ""
+        echo "Error details:"
+        tail -30 /tmp/docker-compose.log
+        echo ""
+        echo "Troubleshooting:"
+        echo "  1. Check Docker daemon: docker ps"
+        echo "  2. View detailed logs: docker-compose logs"
+        echo "  3. Check port conflicts: lsof -i -P -n | grep LISTEN"
+        echo "  4. Try again: bash agentforge.sh setup"
         return 1
     fi
+
+    echo ""
+    echo -e "${GREEN}✓${NC} Docker services started!"
+    echo ""
+
+    # Wait for services with progress indicator
+    echo "⏳ Waiting for services to be ready..."
+    sleep 3
+
+    RETRIES=0
+    MAX_RETRIES=30
+
+    while [ $RETRIES -lt $MAX_RETRIES ]; do
+        READY=0
+
+        # Check backend
+        if curl -s $BACKEND_URL/health > /dev/null 2>&1; then
+            READY=$((READY + 1))
+        fi
+
+        # Check frontend (just check if port is open)
+        if nc -z localhost 5173 2>/dev/null || curl -s http://localhost:5173 > /dev/null 2>&1; then
+            READY=$((READY + 1))
+        fi
+
+        if [ $READY -eq 2 ]; then
+            break
+        fi
+
+        echo -n "."
+        sleep 1
+        RETRIES=$((RETRIES + 1))
+    done
+
+    echo ""
+    echo ""
+
+    # Check service health
+    echo "🔍 Checking service health..."
+    echo ""
+
+    if curl -s $BACKEND_URL/health > /dev/null 2>&1; then
+        echo -e "${GREEN}✓${NC} Backend is healthy ($BACKEND_URL)"
+    else
+        echo -e "${YELLOW}⚠${NC} Backend is starting..."
+    fi
+
+    if curl -s http://localhost:5173 > /dev/null 2>&1; then
+        echo -e "${GREEN}✓${NC} Frontend is responding (http://localhost:5173)"
+    else
+        echo -e "${YELLOW}⚠${NC} Frontend is starting..."
+    fi
+
+    if docker ps | grep -q spacetimedb; then
+        echo -e "${GREEN}✓${NC} SpacetimeDB container is running"
+    else
+        echo -e "${YELLOW}⚠${NC} SpacetimeDB may still be starting..."
+    fi
+
+    echo ""
+    print_header "Setup Complete! ✅"
+
+    echo "📊 Multi-Agent Configuration:"
+    echo "   - Analyzer & Validator: Ollama (${OLLAMA_MODEL})"
+    echo "   - Executor & Reporter: Gemini API"
+    echo "   - Security: ArmorIQ"
+    echo ""
+    echo "🌐 Service URLs:"
+    echo "   - Frontend: ${FRONTEND_URL} (or http://localhost:5173)"
+    echo "   - Backend:  ${BACKEND_URL}"
+    echo "   - Database: ${SPACETIMEDB_URL}"
+    echo ""
+    echo "📋 Next steps:"
+    echo "   1. Open frontend: ${FRONTEND_URL}"
+    echo "   2. View logs: docker-compose logs -f"
+    echo "   3. Run demo: bash agentforge.sh demo"
+    echo "   4. Stop services: docker-compose down"
+    echo ""
 
     return 0
 }
 
-# ─────────────────────────────────────────────────────────────────────────────
-# COMMAND: START
-# ─────────────────────────────────────────────────────────────────────────────
+# ═══════════════════════════════════════════════════════════════
+# DEMO Command
+# ═══════════════════════════════════════════════════════════════
 
-cmd_start() {
-    print_header "🚀 STARTING AGENTFORGE"
+cmd_demo() {
+    print_header "AgentForge Multi-User Demo"
 
-    print_section "Building and starting Docker services"
-
-    # Check if docker is running
-    if ! docker info > /dev/null 2>&1; then
-        print_error "Docker daemon is not running"
+    # Load environment
+    if ! load_env; then
+        echo -e "${RED}❌ .env file not found!${NC}"
+        echo "Please run: bash agentforge.sh setup"
         return 1
     fi
 
-    # Start services
-    if docker compose up --build -d > /dev/null 2>&1; then
-        print_success "Services started"
-    else
-        print_error "Failed to start services"
+    echo -e "${GREEN}✓${NC} Loaded environment configuration"
+    echo ""
+
+    # Check backend
+    echo "🔍 Checking backend connectivity..."
+    echo "   Backend URL: $BACKEND_URL"
+
+    if ! curl -s $BACKEND_URL/health > /dev/null 2>&1; then
+        echo -e "${RED}❌ Backend is not running. Start it with: bash agentforge.sh setup${NC}"
+        echo "To check status: docker-compose logs backend"
         return 1
     fi
 
-    # Wait for services to be ready
-    print_section "Waiting for services to initialize"
-    sleep 5
+    echo -e "${GREEN}✓${NC} Backend is running"
+    echo ""
 
-    # Check services
-    print_section "Verifying services"
-
-    BACKEND_OK=$(docker compose ps | grep -c "agentforge-backend.*Up" || echo "0")
-    FRONTEND_OK=$(docker compose ps | grep -c "agentforge-frontend.*Up" || echo "0")
-    SPACETIMEDB_OK=$(docker compose ps | grep -c "agentforge-spacetimedb.*Up" || echo "0")
-
-    [ "$BACKEND_OK" -gt 0 ] && print_success "Backend running" || print_error "Backend not running"
-    [ "$FRONTEND_OK" -gt 0 ] && print_success "Frontend running" || print_error "Frontend not running"
-    [ "$SPACETIMEDB_OK" -gt 0 ] && print_success "SpacetimeDB running" || print_error "SpacetimeDB not running"
-
-    # Test endpoints
-    print_section "Testing endpoints"
-
-    if curl -s http://localhost:8001/health > /dev/null 2>&1; then
-        print_success "Backend API responding"
+    # Check Ollama
+    echo "🔍 Checking Ollama connection..."
+    if curl -s $OLLAMA_API_URL/api/tags > /dev/null 2>&1; then
+        echo -e "${GREEN}✓${NC} Ollama is running (${OLLAMA_MODEL})"
     else
-        print_warning "Backend API not yet responding (might still be initializing)"
+        echo -e "${YELLOW}⚠${NC} Warning: Ollama may not be running at $OLLAMA_API_URL"
+        echo "   Start Ollama with: ollama serve"
     fi
+    echo ""
 
-    # Summary
-    print_section "Summary"
-    echo -e "${GREEN}AgentForge is starting up!${NC}"
+    # Generate unique user IDs for demo
+    USER_A="demo-user-$(openssl rand -hex 4)"
+    USER_B="demo-user-$(openssl rand -hex 4)"
+
+    echo "👥 Simulating 2 concurrent users:"
+    echo "   User A: $USER_A"
+    echo "   User B: $USER_B"
     echo ""
-    print_item "Frontend: http://localhost:5174"
-    print_item "Backend API: http://localhost:8001"
-    print_item "API Docs: http://localhost:8001/docs"
-    print_item "SpacetimeDB: http://localhost:3001"
+
+    # Submit User A request
+    echo "📤 Submitting User A's request..."
+    REQUEST_A="Analyze sales trends for Q1 and summarize insights"
+    echo "   Request: '$REQUEST_A'"
     echo ""
-    print_info "Use './agentforge.sh logs [service]' to view logs"
-    print_info "Use './agentforge.sh test' to run tests"
+
+    curl -s -X POST $BACKEND_URL/api/jailbreak \
+      -H "Content-Type: application/json" \
+      -d "{
+        \"user_request\": \"$REQUEST_A\",
+        \"user_id\": \"$USER_A\",
+        \"context\": {
+          \"demo\": true,
+          \"user\": \"A\",
+          \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"
+        }
+      }" > /tmp/user_a_response.json 2>&1 &
+
+    PID_A=$!
+
+    # Small stagger so the pipeline steps interleave visually
+    sleep 0.5
+
+    # Submit User B request
+    echo "📤 Submitting User B's request (0.5s later)..."
+    REQUEST_B="Review the codebase for security vulnerabilities"
+    echo "   Request: '$REQUEST_B'"
+    echo ""
+
+    curl -s -X POST $BACKEND_URL/api/jailbreak \
+      -H "Content-Type: application/json" \
+      -d "{
+        \"user_request\": \"$REQUEST_B\",
+        \"user_id\": \"$USER_B\",
+        \"context\": {
+          \"demo\": true,
+          \"user\": \"B\",
+          \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"
+        }
+      }" > /tmp/user_b_response.json 2>&1 &
+
+    PID_B=$!
+
+    # Wait for both requests to complete
+    wait $PID_A $PID_B
+
+    echo ""
+    echo "📨 User A Response:"
+    cat /tmp/user_a_response.json | jq . 2>/dev/null || cat /tmp/user_a_response.json
+    echo ""
+
+    echo "📨 User B Response:"
+    cat /tmp/user_b_response.json | jq . 2>/dev/null || cat /tmp/user_b_response.json
+    echo ""
+
+    echo -e "${GREEN}✅ Both tasks submitted!${NC}"
+    echo ""
+
+    echo "📊 Multi-Agent Pipeline Status:"
+    echo "   Step 1 (0-25%): Analyzer (Ollama) → Fast request analysis"
+    echo "   Step 2 (25-50%): Executor (Gemini) → Accurate execution"
+    echo "   Step 3 (50-75%): Validator (Ollama) → Result verification"
+    echo "   Step 4 (75-100%): Reporter (Gemini) → Report generation"
+    echo ""
+
+    echo "🔍 What to observe:"
+    echo "   ✓ Dashboard shows both users' tasks in separate sections"
+    echo "   ✓ TaskFlow shows pipeline progress for both tasks"
+    echo "   ✓ AgentBoard shows which user's task each agent is processing"
+    echo "   ✓ Header shows 'Live Users' counter (if using browser)"
+    echo ""
+
+    echo "📋 Next steps:"
+    echo "   1. Open browser: ${FRONTEND_URL}"
+    echo "   2. See 'My Tasks' vs 'Other Users' sections"
+    echo "   3. Monitor both tasks executing in parallel"
+    echo "   4. Watch the 'Live Users' badge at the top"
+    echo "   5. Open another browser tab to see multi-user sync"
+    echo ""
+    echo "💡 Tip: Run 'docker-compose logs -f backend' to see execution logs"
+    echo ""
+
+    return 0
 }
 
-# ─────────────────────────────────────────────────────────────────────────────
-# COMMAND: STOP
-# ─────────────────────────────────────────────────────────────────────────────
-
-cmd_stop() {
-    print_header "⏹️  STOPPING AGENTFORGE"
-
-    print_section "Stopping services (keeping data)"
-
-    if docker compose stop > /dev/null 2>&1; then
-        print_success "Services stopped"
-    else
-        print_error "Failed to stop services"
-        return 1
-    fi
-
-    print_section "Status"
-    echo -e "${GREEN}All services have been stopped gracefully${NC}"
-    echo -e "${YELLOW}Data is preserved (containers still exist)${NC}"
-    echo ""
-    print_info "To resume: ./agentforge.sh start"
-    print_info "To destroy everything: ./agentforge.sh destroy"
-}
-
-# ─────────────────────────────────────────────────────────────────────────────
-# COMMAND: DESTROY
-# ─────────────────────────────────────────────────────────────────────────────
-
-cmd_destroy() {
-    print_header "💥 DESTROYING AGENTFORGE (COMPLETE CLEANUP)"
-
-    print_section "⚠️  WARNING"
-    echo -e "${RED}This will COMPLETELY DELETE:${NC}"
-    print_item "All running containers"
-    print_item "All stopped containers"
-    print_item "All Docker volumes (databases)"
-    print_item "All data"
-    echo ""
-
-    read -p "Are you ABSOLUTELY SURE? Type 'destroy' to confirm: " confirm
-
-    if [ "$confirm" != "destroy" ]; then
-        print_warning "Cancelled - no changes made"
-        return 0
-    fi
-
-    print_section "Removing containers"
-    docker compose down -v > /dev/null 2>&1 && print_success "Containers removed" || print_warning "No containers to remove"
-
-    print_section "Cleaning Docker resources"
-
-    # Remove dangling images
-    DANGLING=$(docker images -q -f "dangling=true" 2>/dev/null | wc -l)
-    if [ "$DANGLING" -gt 0 ]; then
-        docker rmi $(docker images -q -f "dangling=true") > /dev/null 2>&1
-        print_success "Removed $DANGLING dangling images"
-    fi
-
-    # Remove agentforge images
-    docker rmi agentforge-backend agentforge-frontend > /dev/null 2>&1 && print_success "Removed AgentForge images" || true
-
-    print_section "Verification"
-    CONTAINERS=$(docker compose ps -a 2>/dev/null | grep -c "agentforge" || echo "0")
-
-    if [ "$CONTAINERS" -eq 0 ]; then
-        print_success "Complete cleanup successful"
-    else
-        print_warning "Some resources may still exist"
-    fi
-
-    echo ""
-    echo -e "${RED}AgentForge has been completely destroyed${NC}"
-    echo -e "${YELLOW}All data is gone. To start fresh: ./agentforge.sh start${NC}"
-}
-
-# ─────────────────────────────────────────────────────────────────────────────
-# COMMAND: STATUS
-# ─────────────────────────────────────────────────────────────────────────────
+# ═══════════════════════════════════════════════════════════════
+# STATUS Command
+# ═══════════════════════════════════════════════════════════════
 
 cmd_status() {
-    print_header "📊 AGENTFORGE STATUS"
+    print_header "System Status Check"
 
-    print_section "Docker Services"
-    docker compose ps
-
-    print_section "Backend Health"
-    HEALTH_RESPONSE=$(curl -s http://localhost:8001/health 2>/dev/null)
-    if [ -n "$HEALTH_RESPONSE" ]; then
-        if echo "$HEALTH_RESPONSE" | grep -q "ok"; then
-            print_success "Backend is healthy"
-            if command -v python3 &> /dev/null; then
-                echo "$HEALTH_RESPONSE" | python3 -m json.tool 2>/dev/null || echo "$HEALTH_RESPONSE"
-            else
-                echo "$HEALTH_RESPONSE"
-            fi
-        else
-            print_warning "Backend is not responding"
-        fi
+    echo "🔍 Checking Docker..."
+    if command -v docker &> /dev/null; then
+        echo -e "${GREEN}✓${NC} Docker is installed"
+        echo "   Version: $(docker --version)"
     else
-        print_warning "Backend is not responding"
-    fi
-
-    print_section "Service URLs"
-    print_item "Frontend: http://localhost:5174"
-    print_item "Backend: http://localhost:8001"
-    print_item "API Docs: http://localhost:8001/docs"
-    print_item "SpacetimeDB: http://localhost:3001"
-}
-
-# ─────────────────────────────────────────────────────────────────────────────
-# COMMAND: LOGS
-# ─────────────────────────────────────────────────────────────────────────────
-
-cmd_logs() {
-    local service="${1:-all}"
-
-    print_header "📋 AGENTFORGE LOGS"
-
-    case "$service" in
-        backend)
-            print_section "Backend logs (Press Ctrl+C to stop)"
-            docker compose logs -f backend
-            ;;
-        frontend)
-            print_section "Frontend logs (Press Ctrl+C to stop)"
-            docker compose logs -f frontend
-            ;;
-        spacetimedb)
-            print_section "SpacetimeDB logs (Press Ctrl+C to stop)"
-            docker compose logs -f spacetimedb
-            ;;
-        all)
-            print_section "All services logs (Press Ctrl+C to stop)"
-            docker compose logs -f
-            ;;
-        *)
-            print_error "Unknown service: $service"
-            echo "Available: backend, frontend, spacetimedb, all"
-            return 1
-            ;;
-    esac
-}
-
-# ─────────────────────────────────────────────────────────────────────────────
-# COMMAND: TEST
-# ─────────────────────────────────────────────────────────────────────────────
-
-cmd_test() {
-    print_header "🧪 TESTING AGENTFORGE"
-
-    # Wait for services
-    print_section "Waiting for services"
-    sleep 3
-
-    # Test 1: Health Check
-    print_section "Test 1: System Health"
-    HEALTH=$(curl -s http://localhost:8001/health)
-    if echo "$HEALTH" | grep -q "ok"; then
-        print_success "Health check passed"
-        if command -v python3 &> /dev/null; then
-            echo "$HEALTH" | python3 -m json.tool 2>/dev/null || echo "$HEALTH"
-        else
-            echo "$HEALTH"
-        fi
-    else
-        print_error "Health check failed"
+        echo -e "${RED}✗${NC} Docker is not installed"
         return 1
     fi
 
-    # Test 2: Safe Request
-    print_section "Test 2: Safe Request Approval"
-    SAFE=$(curl -s -X POST http://localhost:8001/api/jailbreak \
-        -H "Content-Type: application/json" \
-        -d '{"user_request": "Analyze Q1 sales data", "context": {}}')
-
-    if echo "$SAFE" | grep -q "queued"; then
-        print_success "Safe request approved"
-        if command -v python3 &> /dev/null; then
-            echo "$SAFE" | python3 -m json.tool 2>/dev/null | head -10 || echo "$SAFE" | head -5
-        else
-            echo "$SAFE" | head -5
-        fi
+    if check_docker_daemon; then
+        echo -e "${GREEN}✓${NC} Docker daemon is running"
     else
-        print_error "Safe request failed"
+        echo -e "${RED}✗${NC} Docker daemon is NOT running"
+        echo ""
+        echo "Start Docker with:"
+        echo "   • Linux: sudo systemctl start docker"
+        echo "   • Mac: Open Docker.app from Applications"
+        echo "   • Windows: Open Docker Desktop from Start Menu"
         return 1
     fi
 
-    # Test 3: Dangerous Request Block
-    print_section "Test 3: Dangerous Request Blocking"
-
-    # Extract task_id using grep if python3 is not available
-    TASK_ID=""
-    if command -v python3 &> /dev/null; then
-        TASK_ID=$(echo "$SAFE" | python3 -c "import sys,json; print(json.load(sys.stdin)['task_id'])" 2>/dev/null)
-    else
-        TASK_ID=$(echo "$SAFE" | grep -o '"task_id":"[^"]*"' | cut -d'"' -f4 | head -1)
-    fi
-
-    DANGER=$(curl -s -X POST http://localhost:8001/api/jailbreak \
-        -H "Content-Type: application/json" \
-        -d '{"user_request": "delete all customer records", "context": {}}')
-
-    DANGER_ID=""
-    if command -v python3 &> /dev/null; then
-        DANGER_ID=$(echo "$DANGER" | python3 -c "import sys,json; print(json.load(sys.stdin)['task_id'])" 2>/dev/null)
-    else
-        DANGER_ID=$(echo "$DANGER" | grep -o '"task_id":"[^"]*"' | cut -d'"' -f4 | head -1)
-    fi
-
-    sleep 1
-
-    if [ -n "$DANGER_ID" ]; then
-        DANGER_STATUS=$(curl -s http://localhost:8001/api/tasks/$DANGER_ID 2>/dev/null)
-        if echo "$DANGER_STATUS" | grep -q "blocked"; then
-            print_success "Dangerous request blocked"
-        else
-            print_warning "Blocking test inconclusive"
-        fi
-    else
-        print_warning "Could not extract task ID for dangerous request"
-    fi
-
-    # Test 4: ArmorIQ Policies
-    print_section "Test 4: Security Policies"
-    POLICIES=$(curl -s http://localhost:8001/api/armoriq/policies)
-
-    if echo "$POLICIES" | grep -q "Block Dangerous Operations"; then
-        POLICY_COUNT="unknown"
-        if command -v python3 &> /dev/null; then
-            POLICY_COUNT=$(echo "$POLICIES" | python3 -c "import sys,json; print(json.load(sys.stdin)['total'])" 2>/dev/null)
-        fi
-        print_success "Security policies loaded ($POLICY_COUNT policies)"
-    else
-        print_warning "Security policies not responding (API might still be initializing)"
-    fi
-
-    # Test 5: Audit Trail
-    print_section "Test 5: Audit Trail"
-    AUDIT=$(curl -s http://localhost:8001/api/armoriq/audit-trail)
-
-    if echo "$AUDIT" | grep -q "verifications"; then
-        VERIFICATIONS="unknown"
-        if command -v python3 &> /dev/null; then
-            VERIFICATIONS=$(echo "$AUDIT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('total_verifications', 'unknown'))" 2>/dev/null)
-        fi
-        print_success "Audit trail accessible ($VERIFICATIONS verifications recorded)"
-    else
-        print_warning "Audit trail not yet accessible"
-    fi
-
-    # Summary
-    print_section "Test Summary"
-    echo -e "${GREEN}✅ All critical tests passed${NC}"
     echo ""
-    print_info "System is ready for demo"
+    echo "🔍 Checking Docker Compose..."
+    if command -v docker-compose &> /dev/null; then
+        echo -e "${GREEN}✓${NC} Docker Compose is installed"
+        echo "   Version: $(docker-compose --version)"
+    else
+        echo -e "${RED}✗${NC} Docker Compose is not installed"
+        return 1
+    fi
+
+    echo ""
+    echo "📦 Running containers:"
+    if docker ps --format "table {{.Names}}\t{{.Status}}" | grep -q agentforge; then
+        docker ps --filter "name=agentforge" --format "table {{.Names}}\t{{.Status}}"
+    else
+        echo "   No AgentForge containers running"
+        echo "   Run: bash agentforge.sh setup"
+    fi
+
+    echo ""
+    echo -e "${GREEN}✓${NC} System check complete!"
+    return 0
 }
 
-# ─────────────────────────────────────────────────────────────────────────────
-# COMMAND: DIAGNOSE
-# ─────────────────────────────────────────────────────────────────────────────
+# ═══════════════════════════════════════════════════════════════
+# HELP Command
+# ═══════════════════════════════════════════════════════════════
 
-cmd_diagnose() {
-    print_header "🔍 AGENTFORGE DIAGNOSTICS"
-
-    # Check 1: Python Syntax
-    print_section "Checking Python syntax"
-
-    SYNTAX_OK=0
-    for file in backend/app/*.py; do
-        if python3 -m py_compile "$file" 2>/dev/null; then
-            print_success "$(basename $file)"
-            ((SYNTAX_OK++))
-        else
-            print_error "$(basename $file) has syntax errors"
-        fi
-    done
-
-    # Check 2: Environment
-    print_section "Checking environment"
-
-    if [ -f ".env" ]; then
-        print_success ".env file exists"
-    else
-        print_warning ".env file missing (using defaults)"
-    fi
-
-    # Check 3: Docker
-    print_section "Checking Docker"
-
-    if docker info > /dev/null 2>&1; then
-        print_success "Docker is running"
-        docker --version | sed 's/^/   /'
-    else
-        print_error "Docker is not running"
-    fi
-
-    # Check 4: Docker Compose
-    print_section "Checking Docker Compose"
-
-    if docker compose config > /dev/null 2>&1; then
-        print_success "docker-compose.yml is valid"
-    else
-        print_error "docker-compose.yml has errors"
-    fi
-
-    # Check 5: Services
-    print_section "Checking Docker services"
-
-    RUNNING=$(docker compose ps 2>/dev/null | grep -c "Up" || echo "0")
-    print_info "Services running: $RUNNING/3"
-
-    # Check 6: Ports
-    print_section "Checking ports"
-
-    if command -v netstat &> /dev/null; then
-        netstat -tlnp 2>/dev/null | grep -E "8001|5174|3001" || echo "   • Ports not yet in use"
-    elif command -v ss &> /dev/null; then
-        ss -tlnp 2>/dev/null | grep -E "8001|5174|3001" || echo "   • Ports not yet in use"
-    else
-        echo "   • netstat/ss not available - skipping port check"
-    fi
-
-    print_section "Diagnostic Summary"
-    echo -e "${GREEN}Diagnostics complete${NC}"
-}
-
-# ─────────────────────────────────────────────────────────────────────────────
-# COMMAND: CLEAN
-# ─────────────────────────────────────────────────────────────────────────────
-
-cmd_clean() {
-    print_header "🧹 CLEANING DOCKER RESOURCES"
-
-    print_section "Stopping containers"
-    docker compose down > /dev/null 2>&1 && print_success "Containers stopped" || print_warning "No containers to stop"
-
-    print_section "Removing dangling images"
-    DANGLING=$(docker images -q -f "dangling=true" 2>/dev/null | wc -l)
-    if [ "$DANGLING" -gt 0 ]; then
-        docker rmi $(docker images -q -f "dangling=true") > /dev/null 2>&1
-        print_success "Removed $DANGLING dangling images"
-    else
-        print_info "No dangling images"
-    fi
-
-    print_section "Cleaning unused volumes"
-    docker volume prune -f > /dev/null 2>&1 && print_success "Unused volumes cleaned" || true
-
-    print_section "Summary"
-    echo -e "${GREEN}Cleanup complete${NC}"
-    echo -e "${YELLOW}Containers and data removed${NC}"
-    echo -e "${BLUE}To restart: ./agentforge.sh start${NC}"
-}
-
-# ─────────────────────────────────────────────────────────────────────────────
-# COMMAND: HELP
-# ─────────────────────────────────────────────────────────────────────────────
-
-cmd_help() {
+show_help() {
     cat << 'EOF'
 
-╔════════════════════════════════════════════════════════════════╗
-║         🎯 AGENTFORGE - MASTER CONTROL SCRIPT                 ║
-╚════════════════════════════════════════════════════════════════╝
+╔═══════════════════════════════════════════════════════════════╗
+║          AgentForge - Unified Management Script               ║
+║                                                               ║
+║  Single script for verify, setup, and demo operations        ║
+╚═══════════════════════════════════════════════════════════════╝
+
+USAGE:
+    bash agentforge.sh [command]
 
 COMMANDS:
+    health    - Check if all services are running
+                Verifies ArmorIQ, Ollama, Gemini, SpacetimeDB, Backend, Frontend
+                Usage: bash agentforge.sh health
+                Use this to verify everything is working!
 
-  start       → Start all services
-              Usage: ./agentforge.sh start
+    status    - Check Docker and system configuration
+                Verifies Docker daemon, containers, and basic setup
+                Usage: bash agentforge.sh status
+                Use this first if docker-compose fails!
 
-  stop        → Stop services (keeps data)
-              Usage: ./agentforge.sh stop
+    verify    - Verify project setup and configuration
+                Checks files, directories, dependencies, and env vars
+                Usage: bash agentforge.sh verify
 
-  destroy     → Completely destroy everything
-              Usage: ./agentforge.sh destroy
-              (DANGEROUS: deletes all data)
+    setup     - Initialize and start all services
+                Loads .env, validates config, starts Docker services
+                Usage: bash agentforge.sh setup
+                Prerequisite: .env file must exist with API keys
 
-  status      → Show current status
-              Usage: ./agentforge.sh status
+    demo      - Run demo request through the system
+                Submits sample request and shows multi-agent pipeline
+                Usage: bash agentforge.sh demo
+                Prerequisite: Services must be running (setup completed)
 
-  logs        → Stream service logs
-              Usage: ./agentforge.sh logs [service]
-              Services: backend, frontend, spacetimedb, all
-
-  test        → Run all tests
-              Usage: ./agentforge.sh test
-              Tests: health, safe request, dangerous block, policies, audit
-
-  diagnose    → Run diagnostics
-              Usage: ./agentforge.sh diagnose
-              Checks: Python, environment, Docker, ports
-
-  clean       → Clean Docker resources
-              Usage: ./agentforge.sh clean
-              (Keeps some data)
-
-  help        → Show this help
-              Usage: ./agentforge.sh help
+    help      - Show this help message
+                Usage: bash agentforge.sh help
 
 QUICK START:
+    1. Start all services:
+       bash start.sh
 
-  1. Start services:
-     ./agentforge.sh start
+    2. Check service health:
+       bash agentforge.sh health
 
-  2. Run tests:
-     ./agentforge.sh test
+    3. Run demo:
+       bash agentforge.sh demo
 
-  3. View logs:
-     ./agentforge.sh logs backend
+DETAILED SETUP:
+    1. Check system status:
+       bash agentforge.sh status
 
-  4. Check status:
-     ./agentforge.sh status
+    2. Verify setup:
+       bash agentforge.sh verify
 
-  5. Stop services:
-     ./agentforge.sh stop
+    3. Initialize services:
+       bash agentforge.sh setup
 
-  6. Destroy everything:
-     ./agentforge.sh destroy
+TROUBLESHOOTING:
+    Docker not running error?
+    → bash agentforge.sh status
+    → Then start Docker and run: bash agentforge.sh setup
 
-ENDPOINTS:
+    Docker not found error?
+    → Install Docker Desktop from https://www.docker.com/products/docker-desktop
 
-  Frontend:     http://localhost:5174
-  Backend:      http://localhost:8001
-  API Docs:     http://localhost:8001/docs
-  SpacetimeDB:  http://localhost:3001
+    Services failing to start?
+    → docker-compose logs -f          # View real-time logs
+    → docker ps                       # Check running containers
+    → bash agentforge.sh status       # Check system status
 
-EXAMPLES:
+    Port conflicts?
+    → netstat -an | grep -E ':(8000|5173|3000)'
+    → Stop conflicting services or change ports in docker-compose.yml
 
-  # Full lifecycle
-  ./agentforge.sh start           # Start
-  ./agentforge.sh test            # Test
-  ./agentforge.sh logs all        # Watch all logs
-  ./agentforge.sh status          # Check status
-  ./agentforge.sh stop            # Stop gracefully
+ENVIRONMENT:
+    .env file is required with these variables:
+    - OLLAMA_API_URL          (http://localhost:11434)
+    - OLLAMA_MODEL            (mistral)
+    - GEMINI_API_KEY          (your Gemini API key)
+    - ARMORIQ_API_KEY         (your ArmorIQ API key)
+    - BACKEND_URL             (http://localhost:8001)
+    - FRONTEND_URL            (http://localhost:5174)
+    - SPACETIMEDB_URL         (http://localhost:3001)
 
-  # Development
-  ./agentforge.sh diagnose        # Check environment
-  ./agentforge.sh logs backend    # Watch backend only
+CONFIGURATION:
+    Frontend:  http://localhost:5174
+    Backend:   http://localhost:8001
+    Database:  http://localhost:3001
 
-  # Complete reset
-  ./agentforge.sh destroy         # Nuke everything
-  ./agentforge.sh start           # Start fresh
-
-CONTROL:
-
-  • Ctrl+C to stop log streaming
-  • Run 'stop' to pause services
-  • Run 'destroy' to reset completely
-  • Run 'clean' to remove Docker resources
-
-For more information, see COMPLETE_GUIDE.md
+MULTI-AGENT PIPELINE:
+    Step 1 (25%): Analyzer (Ollama)    → Fast request analysis
+    Step 2 (50%): Executor (Gemini)    → Accurate execution
+    Step 3 (75%): Validator (Ollama)   → Result verification
+    Step 4 (100%): Reporter (Gemini)   → Report generation
 
 EOF
 }
 
-# ─────────────────────────────────────────────────────────────────────────────
-# MAIN ENTRY POINT
-# ─────────────────────────────────────────────────────────────────────────────
+# ═══════════════════════════════════════════════════════════════
+# Main Entry Point
+# ═══════════════════════════════════════════════════════════════
 
 main() {
-    local cmd="${1:-help}"
+    local command=${1:-help}
 
-    case "$cmd" in
-        start)
-            cmd_start
-            ;;
-        stop)
-            cmd_stop
-            ;;
-        destroy)
-            cmd_destroy
+    case "$command" in
+        health)
+            if [ -f "health.sh" ]; then
+                bash health.sh
+                exit $?
+            else
+                echo -e "${RED}Error: health.sh not found${NC}"
+                exit 1
+            fi
             ;;
         status)
             cmd_status
+            exit $?
             ;;
-        logs)
-            cmd_logs "$2"
+        verify)
+            cmd_verify
+            exit $?
             ;;
-        test)
-            cmd_test
+        setup)
+            cmd_setup
+            exit $?
             ;;
-        diagnose)
-            cmd_diagnose
-            ;;
-        clean)
-            cmd_clean
+        demo)
+            cmd_demo
+            exit $?
             ;;
         help|--help|-h)
-            cmd_help
+            show_help
+            exit 0
             ;;
         *)
-            print_error "Unknown command: $cmd"
+            echo -e "${RED}Unknown command: $command${NC}"
             echo ""
-            cmd_help
+            show_help
             exit 1
             ;;
     esac
 }
 
+# Run main
 main "$@"

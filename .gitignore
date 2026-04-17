@@ -1,0 +1,66 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+*.so
+.venv/
+venv/
+ENV/
+env/
+backend/venv/
+
+# Node / Frontend
+node_modules/
+frontend/node_modules/
+dist/
+.next/
+.nuxt/
+*.tsbuildinfo
+frontend/tsconfig.tsbuildinfo
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Editor / OS
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Docker
+.docker/
+
+# Logs & build artifacts
+*.log
+*.txt
+!README.txt
+logs/
+build_log.txt
+build_output.log
+FINAL_STATUS.txt
+
+# Test artifacts
+.pytest_cache/
+coverage/
+.coverage
+htmlcov/
+
+# Rust / SpacetimeDB
+target/
+Cargo.lock
+
+# Scripts (local-only)
+health.sh
+start.sh
+test_armoriq.sh
+test_integration.sh

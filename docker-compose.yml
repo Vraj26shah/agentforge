@@ -22,7 +22,6 @@ services:
     volumes:
       - ./spacetimedb:/module
     working_dir: /module
-    # Publish the Rust module to the SpacetimeDB instance
     entrypoint: ["sh", "-c"]
     command: "spacetime publish --server http://spacetimedb:3000 agentforge || true"
     restart: "no"
@@ -31,13 +30,16 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    ports:
-      - "8001:8000"
+    # host networking: backend shares host network stack, so it can reach
+    # Ollama at localhost:11434 directly (no host.docker.internal needed)
+    network_mode: host
     environment:
-      # Ollama (running on host)
-      - OLLAMA_API_URL=http://host.docker.internal:11434
-      - OLLAMA_MODEL=${OLLAMA_MODEL:-mistral}
+      # Ollama — reachable on host loopback
+      - OLLAMA_API_URL=http://localhost:11434
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-qwen2:0.5b}
       - USE_OLLAMA=true
+      # Gemini
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
       # ArmorIQ
       - ARMORIQ_API_KEY=${ARMORIQ_API_KEY:-}
       - ARMORIQ_SECRET_KEY=${ARMORIQ_SECRET_KEY:-dev-secret-key}
@@ -45,24 +47,25 @@ services:
       - ARMORIQ_AGENT_ID=${ARMORIQ_AGENT_ID:-agentforge-agent}
       - ARMORIQ_CONTEXT_ID=${ARMORIQ_CONTEXT_ID:-default}
       - ARMORIQ_TOKEN_VALIDITY=${ARMORIQ_TOKEN_VALIDITY:-600}
-      # SpacetimeDB (port 3000 is the correct port)
-      - SPACETIMEDB_URL=http://spacetimedb:3000
-      - SPACETIMEDB_HOST=spacetimedb
-      - SPACETIMEDB_PORT=3000
+      # SpacetimeDB — reachable via host-mapped port 3001
+      - SPACETIMEDB_URL=http://localhost:3001
+      - SPACETIMEDB_HOST=localhost
+      - SPACETIMEDB_PORT=3001
       # General
       - PYTHONUNBUFFERED=1
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - CODESPACE_ROOT=/workspace
     volumes:
       - ./backend:/app
+      - .:/workspace:rw
     depends_on:
       spacetimedb:
         condition: service_started
       spacetimedb-init:
         condition: service_started
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     restart: unless-stopped
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    # Listen on 8001 to match VITE_BACKEND_URL=http://localhost:8001
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8001 --reload
 
   frontend:
     build:
@@ -78,6 +81,8 @@ services:
       - /app/node_modules
     depends_on:
       - backend
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     restart: unless-stopped
     command: npm run dev -- --host 0.0.0.0
 

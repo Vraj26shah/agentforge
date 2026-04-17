@@ -1,0 +1,274 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e5]:
+      - generic [ref=e6]:
+        - generic [ref=e7]:
+          - generic [ref=e8]:
+            - img [ref=e10]
+            - heading "AgentForge" [level=1] [ref=e12]
+            - generic [ref=e13]: v0.1.0
+          - paragraph [ref=e14]: Multi-Agent AI Orchestration Platform — ArmorIQ Intent Verification + SpacetimeDB Real-time Sync
+        - generic [ref=e15]:
+          - button "Active Role Junior Engineer" [ref=e17] [cursor=pointer]:
+            - img [ref=e18]
+            - generic [ref=e20]:
+              - generic [ref=e21]: Active Role
+              - generic [ref=e22]: Junior Engineer
+            - img [ref=e23]
+          - generic [ref=e25]:
+            - generic [ref=e27]: Live
+            - generic [ref=e28]: ws://backend:8000
+      - generic [ref=e29]:
+        - generic [ref=e30]:
+          - generic [ref=e31]: Total Tasks
+          - generic [ref=e32]: "0"
+        - generic [ref=e33]:
+          - generic [ref=e34]: Completed
+          - generic [ref=e35]: "0"
+        - generic [ref=e36]:
+          - generic [ref=e37]: Blocked
+          - generic [ref=e38]: "0"
+        - generic [ref=e39]:
+          - generic [ref=e40]: Active Agents
+          - generic [ref=e41]: 0/4
+        - generic [ref=e42]:
+          - generic [ref=e43]: Log Entries
+          - generic [ref=e44]: "4"
+        - generic [ref=e45]:
+          - generic [ref=e46]: Live Users
+          - generic [ref=e47]: "4"
+      - navigation [ref=e48]:
+        - button "Dashboard" [ref=e49] [cursor=pointer]:
+          - img [ref=e50]
+          - text: Dashboard
+        - button "Task Flow" [ref=e52] [cursor=pointer]:
+          - img [ref=e53]
+          - text: Task Flow
+        - button "Agents" [ref=e55] [cursor=pointer]:
+          - img [ref=e56]
+          - text: Agents
+        - button "Architecture" [ref=e58] [cursor=pointer]:
+          - img [ref=e59]
+          - text: Architecture
+        - button "Live Logs" [ref=e61] [cursor=pointer]:
+          - img [ref=e62]
+          - text: Live Logs
+        - button "Codespace" [active] [ref=e64] [cursor=pointer]:
+          - img [ref=e65]
+          - text: Codespace
+  - main [ref=e67]:
+    - generic [ref=e143]:
+      - generic [ref=e144]:
+        - generic [ref=e145]:
+          - generic [ref=e146]:
+            - generic [ref=e147]: Explorer
+            - generic [ref=e148]:
+              - button "↻" [ref=e149] [cursor=pointer]
+              - button "＋" [ref=e150] [cursor=pointer]
+          - generic [ref=e151]:
+            - button "⬆ Import" [ref=e152] [cursor=pointer]:
+              - generic [ref=e153]: ⬆
+              - text: Import
+            - button "📂 Open" [ref=e154] [cursor=pointer]:
+              - generic [ref=e155]: 📂
+              - text: Open
+        - generic [ref=e156]:
+          - generic [ref=e157]:
+            - button "▾ 📂 backend" [ref=e158] [cursor=pointer]:
+              - generic [ref=e159]: ▾
+              - generic [ref=e160]: 📂
+              - generic [ref=e161]: backend
+            - generic [ref=e162]:
+              - button "▾ 📂 app" [ref=e163] [cursor=pointer]:
+                - generic [ref=e164]: ▾
+                - generic [ref=e165]: 📂
+                - generic [ref=e166]: app
+              - button "🐍 __init__.py" [ref=e167] [cursor=pointer]:
+                - generic [ref=e168]: 🐍
+                - generic [ref=e169]: __init__.py
+              - button "🐍 agents.py" [ref=e170] [cursor=pointer]:
+                - generic [ref=e171]: 🐍
+                - generic [ref=e172]: agents.py
+              - button "🐍 armoriq_integration.py" [ref=e173] [cursor=pointer]:
+                - generic [ref=e174]: 🐍
+                - generic [ref=e175]: armoriq_integration.py
+              - button "🐍 codespace.py" [ref=e176] [cursor=pointer]:
+                - generic [ref=e177]: 🐍
+                - generic [ref=e178]: codespace.py
+              - button "🐍 main.py" [ref=e179] [cursor=pointer]:
+                - generic [ref=e180]: 🐍
+                - generic [ref=e181]: main.py
+              - button "🐍 orchestrator.py" [ref=e182] [cursor=pointer]:
+                - generic [ref=e183]: 🐍
+                - generic [ref=e184]: orchestrator.py
+              - button "🐍 spacetime.py" [ref=e185] [cursor=pointer]:
+                - generic [ref=e186]: 🐍
+                - generic [ref=e187]: spacetime.py
+            - button "📃 Dockerfile" [ref=e188] [cursor=pointer]:
+              - generic [ref=e189]: 📃
+              - generic [ref=e190]: Dockerfile
+            - button "📃 requirements.txt" [ref=e191] [cursor=pointer]:
+              - generic [ref=e192]: 📃
+              - generic [ref=e193]: requirements.txt
+          - generic [ref=e194]:
+            - button "▾ 📂 claude" [ref=e195] [cursor=pointer]:
+              - generic [ref=e196]: ▾
+              - generic [ref=e197]: 📂
+              - generic [ref=e198]: claude
+            - button "📋 settings.json" [ref=e199] [cursor=pointer]:
+              - generic [ref=e200]: 📋
+              - generic [ref=e201]: settings.json
+          - generic [ref=e202]:
+            - button "▾ 📂 frontend" [ref=e203] [cursor=pointer]:
+              - generic [ref=e204]: ▾
+              - generic [ref=e205]: 📂
+              - generic [ref=e206]: frontend
+            - generic [ref=e207]:
+              - button "▾ 📂 src" [ref=e208] [cursor=pointer]:
+                - generic [ref=e209]: ▾
+                - generic [ref=e210]: 📂
+                - generic [ref=e211]: src
+              - button "▸ 📁 components" [ref=e213] [cursor=pointer]:
+                - generic [ref=e214]: ▸
+                - generic [ref=e215]: 📁
+                - generic [ref=e216]: components
+              - 'button "▸ 📁 {components}" [ref=e218] [cursor=pointer]':
+                - generic [ref=e219]: ▸
+                - generic [ref=e220]: 📁
+                - generic [ref=e221]: "{components}"
+              - button "🔷 App.tsx" [ref=e222] [cursor=pointer]:
+                - generic [ref=e223]: 🔷
+                - generic [ref=e224]: App.tsx
+              - button "🎨 index.css" [ref=e225] [cursor=pointer]:
+                - generic [ref=e226]: 🎨
+                - generic [ref=e227]: index.css
+              - button "🔷 main.tsx" [ref=e228] [cursor=pointer]:
+                - generic [ref=e229]: 🔷
+                - generic [ref=e230]: main.tsx
+            - button "📃 Dockerfile" [ref=e231] [cursor=pointer]:
+              - generic [ref=e232]: 📃
+              - generic [ref=e233]: Dockerfile
+            - button "📃 index.html" [ref=e234] [cursor=pointer]:
+              - generic [ref=e235]: 📃
+              - generic [ref=e236]: index.html
+            - button "📋 package-lock.json" [ref=e237] [cursor=pointer]:
+              - generic [ref=e238]: 📋
+              - generic [ref=e239]: package-lock.json
+            - button "📋 package.json" [ref=e240] [cursor=pointer]:
+              - generic [ref=e241]: 📋
+              - generic [ref=e242]: package.json
+            - button "📃 postcss.config.js" [ref=e243] [cursor=pointer]:
+              - generic [ref=e244]: 📃
+              - generic [ref=e245]: postcss.config.js
+            - button "📃 tailwind.config.js" [ref=e246] [cursor=pointer]:
+              - generic [ref=e247]: 📃
+              - generic [ref=e248]: tailwind.config.js
+            - button "📋 tsconfig.json" [ref=e249] [cursor=pointer]:
+              - generic [ref=e250]: 📋
+              - generic [ref=e251]: tsconfig.json
+            - button "🔷 vite.config.ts" [ref=e252] [cursor=pointer]:
+              - generic [ref=e253]: 🔷
+              - generic [ref=e254]: vite.config.ts
+          - button "▾ 📂 scripts" [ref=e256] [cursor=pointer]:
+            - generic [ref=e257]: ▾
+            - generic [ref=e258]: 📂
+            - generic [ref=e259]: scripts
+          - generic [ref=e260]:
+            - button "▾ 📂 spacetimedb" [ref=e261] [cursor=pointer]:
+              - generic [ref=e262]: ▾
+              - generic [ref=e263]: 📂
+              - generic [ref=e264]: spacetimedb
+            - generic [ref=e265]:
+              - button "▾ 📂 src" [ref=e266] [cursor=pointer]:
+                - generic [ref=e267]: ▾
+                - generic [ref=e268]: 📂
+                - generic [ref=e269]: src
+              - button "🦀 lib.rs" [ref=e270] [cursor=pointer]:
+                - generic [ref=e271]: 🦀
+                - generic [ref=e272]: lib.rs
+              - button "🔷 lib.ts" [ref=e273] [cursor=pointer]:
+                - generic [ref=e274]: 🔷
+                - generic [ref=e275]: lib.ts
+            - button "🔧 Cargo.toml" [ref=e276] [cursor=pointer]:
+              - generic [ref=e277]: 🔧
+              - generic [ref=e278]: Cargo.toml
+            - button "📋 tsconfig.json" [ref=e279] [cursor=pointer]:
+              - generic [ref=e280]: 📋
+              - generic [ref=e281]: tsconfig.json
+          - button "📃 .env" [ref=e282] [cursor=pointer]:
+            - generic [ref=e283]: 📃
+            - generic [ref=e284]: .env
+          - button "📃 .gitignore" [ref=e285] [cursor=pointer]:
+            - generic [ref=e286]: 📃
+            - generic [ref=e287]: .gitignore
+          - button "⚡ agentforge.sh" [ref=e288] [cursor=pointer]:
+            - generic [ref=e289]: ⚡
+            - generic [ref=e290]: agentforge.sh
+          - button "📄 ARCHITECTURE_TECHNICAL_GUIDE.md" [ref=e291] [cursor=pointer]:
+            - generic [ref=e292]: 📄
+            - generic [ref=e293]: ARCHITECTURE_TECHNICAL_GUIDE.md
+          - button "📄 CLAUDE.md" [ref=e294] [cursor=pointer]:
+            - generic [ref=e295]: 📄
+            - generic [ref=e296]: CLAUDE.md
+          - button "📄 COMPLETE_GUIDE.md" [ref=e297] [cursor=pointer]:
+            - generic [ref=e298]: 📄
+            - generic [ref=e299]: COMPLETE_GUIDE.md
+          - button "⚙️ docker-compose.yml" [ref=e300] [cursor=pointer]:
+            - generic [ref=e301]: ⚙️
+            - generic [ref=e302]: docker-compose.yml
+          - button "⚡ health.sh" [ref=e303] [cursor=pointer]:
+            - generic [ref=e304]: ⚡
+            - generic [ref=e305]: health.sh
+          - button "📄 JUDGE_PRESENTATION.md" [ref=e306] [cursor=pointer]:
+            - generic [ref=e307]: 📄
+            - generic [ref=e308]: JUDGE_PRESENTATION.md
+          - button "📄 MULTI_USER_IMPLEMENTATION.md" [ref=e309] [cursor=pointer]:
+            - generic [ref=e310]: 📄
+            - generic [ref=e311]: MULTI_USER_IMPLEMENTATION.md
+          - button "📃 page-initial.png" [ref=e312] [cursor=pointer]:
+            - generic [ref=e313]: 📃
+            - generic [ref=e314]: page-initial.png
+          - button "📄 PROJECT_DOCUMENTATION.md" [ref=e315] [cursor=pointer]:
+            - generic [ref=e316]: 📄
+            - generic [ref=e317]: PROJECT_DOCUMENTATION.md
+          - button "📄 README.md" [ref=e318] [cursor=pointer]:
+            - generic [ref=e319]: 📄
+            - generic [ref=e320]: README.md
+          - button "📄 SCRIPT_GUIDE.md" [ref=e321] [cursor=pointer]:
+            - generic [ref=e322]: 📄
+            - generic [ref=e323]: SCRIPT_GUIDE.md
+          - button "⚡ start.sh" [ref=e324] [cursor=pointer]:
+            - generic [ref=e325]: ⚡
+            - generic [ref=e326]: start.sh
+          - button "⚡ test_armoriq.sh" [ref=e327] [cursor=pointer]:
+            - generic [ref=e328]: ⚡
+            - generic [ref=e329]: test_armoriq.sh
+          - button "⚡ test_integration.sh" [ref=e330] [cursor=pointer]:
+            - generic [ref=e331]: ⚡
+            - generic [ref=e332]: test_integration.sh
+      - generic [ref=e333]:
+        - generic [ref=e334]:
+          - generic [ref=e335]: No file open
+          - button "Save" [disabled] [ref=e337]
+        - generic [ref=e338]:
+          - img [ref=e339]
+          - generic [ref=e342]:
+            - generic [ref=e343]: No file open
+            - generic [ref=e344]: Pick a file from the explorer, import from disk, or open by path
+          - generic [ref=e345]:
+            - button "⬆ Import file" [ref=e346] [cursor=pointer]
+            - button "＋ New file" [ref=e347] [cursor=pointer]
+      - generic [ref=e348]:
+        - generic [ref=e349]:
+          - generic [ref=e350]:
+            - img [ref=e352]
+            - generic [ref=e354]:
+              - generic [ref=e355]: AI Code Assistant
+              - generic [ref=e356]: Analyzer → Executor → Validator → Reporter · ArmorIQ RBAC
+          - generic [ref=e357]: ⚠ Select a file to enable AI suggestions
+        - generic [ref=e360]: Select or import a file, then describe a change. The agent pipeline will generate a diff for your review.
+        - generic [ref=e361]:
+          - generic [ref=e362]:
+            - textbox "Open a file first…" [disabled] [ref=e363]
+            - button "Send" [disabled] [ref=e364]
+          - generic [ref=e365]: Enter to send · Shift+Enter new line · Ctrl+S save

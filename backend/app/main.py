@@ -1,7 +1,14 @@
+import logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s — %(message)s",
+    force=True,
+)
+
 from fastapi import FastAPI, WebSocket, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import Optional, Dict, Any, Set, List
+from typing import Optional, Dict, Any, List
 import os
 from dotenv import load_dotenv
 import uuid
@@ -9,8 +16,10 @@ from datetime import datetime
 import json
 
 # Import project modules
+from . import codespace as cs
 from .armoriq_integration import (
-    get_armoriq_client, shutdown_armoriq, IntentStatus, PolicyAction
+    get_armoriq_client, shutdown_armoriq, IntentStatus, PolicyAction,
+    UserRole, IntentCategory, RBAC_MATRIX
 )
 from .orchestrator import orchestrator
 from .agents import AGENTS, get_all_agent_statuses
@@ -35,13 +44,15 @@ app.add_middleware(
 
 # In-memory task cache (SpacetimeDB is the persistent store)
 tasks_db: Dict[str, Dict[str, Any]] = {}
-active_websockets: Set[WebSocket] = set()
+active_websockets: Dict[WebSocket, str] = {}  # ws → session_id
 
 # ── Request/Response Models ────────────────────────────────────────────────────
 
 class UserRequest(BaseModel):
     user_request: str
     context: Optional[dict] = None
+    user_id: Optional[str] = "anonymous"
+    role: Optional[str] = "junior_engineer"  # UserRole: junior_engineer | senior_developer | tech_lead | admin
 
 class TaskResponse(BaseModel):
     task_id: str
@@ -49,6 +60,7 @@ class TaskResponse(BaseModel):
     message: Optional[str] = None
     plan_id: Optional[str] = None
     blocked_reason: Optional[str] = None
+    judgment: Optional[Dict[str, Any]] = None
 
 class TaskDetails(BaseModel):
     task_id: str
@@ -69,7 +81,7 @@ async def broadcast_update(message: Dict[str, Any]):
     message["timestamp"] = datetime.utcnow().isoformat()
     disconnected = set()
 
-    for websocket in active_websockets:
+    for websocket in list(active_websockets.keys()):
         try:
             await websocket.send_json(message)
         except Exception as e:
@@ -77,7 +89,15 @@ async def broadcast_update(message: Dict[str, Any]):
             disconnected.add(websocket)
 
     for ws in disconnected:
-        active_websockets.discard(ws)
+        active_websockets.pop(ws, None)
+
+
+async def _broadcast_users_count():
+    """Broadcast the current count of connected users."""
+    await broadcast_update({
+        "type": "users_update",
+        "connected_users": len(active_websockets),
+    })
 
 # ── Health check ───────────────────────────────────────────────────────────────
 
@@ -130,6 +150,8 @@ async def submit_jailbreak(
         task = {
             "task_id": task_id,
             "user_request": request.user_request,
+            "user_id": request.user_id or "anonymous",
+            "role": request.role or "junior_engineer",
             "intent_token": intent_token.token,
             "intent_hash": intent_token.intent_hash,
             "tool_plan": tool_plan,
@@ -168,7 +190,9 @@ async def submit_jailbreak(
                 process_task_with_armoriq,
                 task_id,
                 intent_token.token,
-                tool_plan
+                tool_plan,
+                request.user_id or "anonymous",
+                request.role or "junior_engineer",
             )
 
         # Broadcast to WebSocket clients
@@ -181,7 +205,8 @@ async def submit_jailbreak(
                 "plan_id": intent_token.intent_hash,
                 "blocked_reason": reason,
                 "created_at": intent_token.issued_at.isoformat(),
-                "progress": 0
+                "progress": 0,
+                "user_id": request.user_id or "anonymous"
             }
         })
         await broadcast_update({
@@ -196,7 +221,12 @@ async def submit_jailbreak(
             status=response_status,
             plan_id=intent_token.intent_hash,
             blocked_reason=reason,
-            message=f"Request {'blocked by ArmorIQ' if response_status == 'blocked' else 'submitted for processing'}"
+            message=(
+                f"Request submitted — role='{request.role or 'junior_engineer'}'. "
+                f"Intent will be classified and RBAC enforced before execution."
+                if response_status != "blocked"
+                else "Request blocked by ArmorIQ token verification."
+            ),
         )
 
     except Exception as e:
@@ -204,6 +234,27 @@ async def submit_jailbreak(
         raise HTTPException(status_code=500, detail=f"Internal error: {str(e)}")
 
 # ── Tool identification helper ─────────────────────────────────────────────────
+
+def is_question_request(user_request: str) -> bool:
+    """Return True if the user is asking a question/explanation rather than requesting a code change."""
+    text = user_request.lower().strip()
+    change_words = [
+        "add ", "create ", "implement ", "write ", "fix ", "update ",
+        "change ", "modify ", "refactor ", "replace ", "delete ", "remove ",
+        "rename ", "move ", "convert ", "rewrite ", "insert ", "edit ",
+        "optimize ", "generate ", "append ", "make ", "set ",
+    ]
+    if any(text.startswith(w) for w in change_words):
+        return False
+    question_words = [
+        "what", "why", "how", "explain", "describe", "tell me",
+        "analyze", "analyse", "summarize", "summarise", "review",
+        "find ", "where", "when ", "who ", "which ", "list ",
+        "show me", "help me understand", "understand", "is there",
+        "does ", "do ", "can you tell", "can you explain",
+    ]
+    return "?" in user_request or any(text.startswith(w) for w in question_words)
+
 
 def identify_tools_from_request(user_request: str) -> List[str]:
     """Identify required tools/actions from user request."""
@@ -229,7 +280,9 @@ def identify_tools_from_request(user_request: str) -> List[str]:
 async def process_task_with_armoriq(
     task_id: str,
     intent_token: str,
-    tool_plan: List[str]
+    tool_plan: List[str],
+    user_id: str = "anonymous",
+    role: str = "junior_engineer",
 ):
     """
     Execute the full 4-agent pipeline with ArmorIQ verification.
@@ -253,7 +306,7 @@ async def process_task_with_armoriq(
         await db.update_task(task_id, {"status": "processing", "progress": 5})
         await broadcast_update({
             "type": "task_update",
-            "task": {"id": task_id, "status": "processing", "progress": 5}
+            "task": {"id": task_id, "status": "processing", "progress": 5, "user_id": user_id}
         })
         await broadcast_update({
             "type": "log",
@@ -295,7 +348,7 @@ async def process_task_with_armoriq(
                 await broadcast_update({
                     "type": "task_update",
                     "task": {"id": task_id, "status": "blocked",
-                             "blocked_reason": reason_msg, "progress": 0}
+                             "blocked_reason": reason_msg, "progress": 0, "user_id": user_id}
                 })
                 await broadcast_update({
                     "type": "security_event",
@@ -334,6 +387,8 @@ async def process_task_with_armoriq(
             user_request=task["user_request"],
             tool_plan=tool_plan,
             db=db,
+            user_id=user_id,
+            role=role,
         )
 
         # ── Update task with final result ────────────────────────────────────
@@ -342,9 +397,18 @@ async def process_task_with_armoriq(
         task["orchestration_result"] = orchestration_result
         task["updated_at"] = datetime.utcnow().isoformat()
 
+        # Handle error status with failed_step information
+        blocked_reason = None
+        if final_status == "error":
+            failed_step = orchestration_result.get("failed_step", "unknown")
+            error_msg = orchestration_result.get("error", "Unknown error")
+            blocked_reason = f"{failed_step}: {error_msg}"
+            task["blocked_reason"] = blocked_reason
+
         await db.update_task(task_id, {
             "status": final_status,
             "progress": 100 if final_status == "completed" else 50,
+            "blocked_reason": blocked_reason,
         })
 
         await broadcast_update({
@@ -354,6 +418,9 @@ async def process_task_with_armoriq(
                 "status": final_status,
                 "progress": 100 if final_status == "completed" else 50,
                 "report": orchestration_result.get("report", ""),
+                "blocked_reason": blocked_reason,
+                "user_id": user_id,
+                "judgment": orchestration_result.get("judgment", {}),
             }
         })
         await broadcast_update({
@@ -379,15 +446,19 @@ async def process_task_with_armoriq(
         task["error"] = str(e)
         task["updated_at"] = datetime.utcnow().isoformat()
 
-        await db.update_task(task_id, {"status": "error", "progress": 0})
+        error_msg = str(e)
+        blocked_reason = f"system: {error_msg}"
+        task["blocked_reason"] = blocked_reason
+
+        await db.update_task(task_id, {"status": "error", "progress": 0, "blocked_reason": blocked_reason})
         await broadcast_update({
             "type": "task_update",
-            "task": {"id": task_id, "status": "error", "progress": 0}
+            "task": {"id": task_id, "status": "error", "progress": 0, "blocked_reason": blocked_reason, "user_id": user_id}
         })
         await broadcast_update({
             "type": "log",
             "level": "error",
-            "message": f"Task {task_id} failed: {str(e)}",
+            "message": f"Task {task_id} failed: {error_msg}",
             "task_id": task_id
         })
 
@@ -399,7 +470,7 @@ async def get_task(task_id: str):
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
 
-    return TaskDetails(
+    details = TaskDetails(
         task_id=task["task_id"],
         status=task["status"],
         user_request=task["user_request"],
@@ -411,6 +482,13 @@ async def get_task(task_id: str):
         created_at=task["created_at"],
         updated_at=task["updated_at"]
     )
+    response = details.dict()
+    response["user_id"] = task.get("user_id", "anonymous")
+    response["task_type"] = task.get("task_type", "general")
+    response["report"] = task.get("report", "")
+    response["suggested_content"] = task.get("suggested_content", "")
+    response["diff_lines"] = task.get("diff_lines", [])
+    return response
 
 @app.get("/api/plans")
 async def list_plans():
@@ -465,6 +543,18 @@ async def get_plan_details(plan_id: str):
     }
 
 # ── ArmorIQ endpoints ──────────────────────────────────────────────────────────
+
+@app.get("/api/roles")
+async def get_roles():
+    """Return available roles and their permission matrix."""
+    matrix = {}
+    for role, perms in RBAC_MATRIX.items():
+        matrix[role.value] = {intent.value: action.value for intent, action in perms.items()}
+    return {
+        "roles": [r.value for r in UserRole],
+        "intent_categories": [c.value for c in IntentCategory],
+        "permission_matrix": matrix,
+    }
 
 @app.get("/api/armoriq/stats")
 async def get_armoriq_stats():
@@ -522,6 +612,188 @@ async def verify_intent_token(request: Dict[str, str]):
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Token verification error: {str(e)}")
+
+class FileWriteRequest(BaseModel):
+    path: str
+    content: str
+
+class CodeSuggestRequest(BaseModel):
+    file_path: str
+    request: str
+    user_id: Optional[str] = "anonymous"
+    role: Optional[str] = "junior_engineer"
+    chat_history: Optional[List[Dict[str, str]]] = []
+
+# ── Codespace endpoints ────────────────────────────────────────────────────────
+
+@app.get("/api/codespace/tree")
+async def codespace_tree(sub: str = ""):
+    return {"tree": cs.get_file_tree(sub)}
+
+@app.get("/api/codespace/file")
+async def codespace_read(path: str):
+    result = cs.read_file(path)
+    if "error" in result:
+        raise HTTPException(status_code=400, detail=result["error"])
+    return result
+
+@app.post("/api/codespace/apply")
+async def codespace_apply(req: FileWriteRequest):
+    result = cs.write_file(req.path, req.content)
+    if "error" in result:
+        raise HTTPException(status_code=400, detail=result["error"])
+    return result
+
+@app.post("/api/codespace/suggest")
+async def codespace_suggest(req: CodeSuggestRequest, background_tasks: BackgroundTasks):
+    file_result = cs.read_file(req.file_path)
+    if "error" in file_result:
+        raise HTTPException(status_code=400, detail=file_result["error"])
+
+    task_id = f"cs-{uuid.uuid4().hex[:8]}"
+    armoriq = get_armoriq_client()
+    tool_plan = ["analyze", "execute", "verify", "report"]
+    intent_token = await armoriq.generate_intent_token(
+        user_request=req.request,
+        tool_plan=tool_plan,
+        additional_context={"file_path": req.file_path}
+    )
+
+    # Detect whether this is a question/explanation or a code-change request
+    task_type = "file_question" if is_question_request(req.request) else "code_suggestion"
+
+    task = {
+        "task_id": task_id,
+        "user_request": req.request,
+        "user_id": req.user_id or "anonymous",
+        "role": req.role or "junior_engineer",
+        "intent_token": intent_token.token,
+        "intent_hash": intent_token.intent_hash,
+        "tool_plan": tool_plan,
+        "status": "queued",
+        "token_valid": True,
+        "created_at": intent_token.issued_at.isoformat(),
+        "updated_at": datetime.utcnow().isoformat(),
+        "context": {"file_path": req.file_path, "task_type": task_type},
+        "file_path": req.file_path,
+        "task_type": task_type,
+    }
+    tasks_db[task_id] = task
+
+    await broadcast_update({
+        "type": "task_update",
+        "task": {
+            "id": task_id,
+            "user_request": req.request,
+            "status": "queued",
+            "plan_id": intent_token.intent_hash,
+            "created_at": intent_token.issued_at.isoformat(),
+            "progress": 0,
+            "user_id": req.user_id or "anonymous",
+            "task_type": task_type,
+            "file_path": req.file_path,
+        }
+    })
+
+    background_tasks.add_task(
+        process_code_suggestion_task,
+        task_id,
+        intent_token.token,
+        tool_plan,
+        req.user_id or "anonymous",
+        req.role or "junior_engineer",
+        req.file_path,
+        file_result["content"],
+        task_type,
+        req.chat_history or [],
+    )
+    return {"task_id": task_id, "status": "queued"}
+
+
+async def process_code_suggestion_task(
+    task_id: str,
+    intent_token: str,
+    tool_plan: List[str],
+    user_id: str,
+    role: str,
+    file_path: str,
+    file_content: str,
+    task_type: str = "code_suggestion",
+    chat_history: Optional[List[Dict[str, str]]] = None,
+):
+    task = tasks_db.get(task_id)
+    if not task:
+        return
+
+    armoriq = get_armoriq_client()
+    try:
+        task["status"] = "processing"
+        await broadcast_update({
+            "type": "task_update",
+            "task": {"id": task_id, "status": "processing", "progress": 5,
+                     "user_id": user_id, "task_type": task_type, "file_path": file_path}
+        })
+
+        # ArmorIQ pre-flight
+        for i, tool_name in enumerate(tool_plan):
+            verification = await armoriq.verify_step(
+                intent_token=intent_token, step_id=f"step-{i+1}", tool_name=tool_name
+            )
+            if not verification.verified:
+                reason_msg = verification.reason or "Policy check failed"
+                task["status"] = "blocked"
+                task["blocked_reason"] = reason_msg
+                await broadcast_update({
+                    "type": "task_update",
+                    "task": {"id": task_id, "status": "blocked",
+                             "blocked_reason": reason_msg, "progress": 0,
+                             "user_id": user_id, "task_type": task_type}
+                })
+                return
+
+        orchestration_result = await orchestrator.orchestrate(
+            task_id=task_id,
+            user_request=task["user_request"],
+            tool_plan=tool_plan,
+            db=db,
+            user_id=user_id,
+            role=role,
+            task_type=task_type,
+            file_context=file_content,
+            chat_history=chat_history or [],
+        )
+
+        final_status = orchestration_result.get("status", "completed")
+        task["status"] = final_status
+        task["updated_at"] = datetime.utcnow().isoformat()
+        task["report"] = orchestration_result.get("report", "")
+        if task_type == "code_suggestion":
+            task["suggested_content"] = orchestration_result.get("suggested_content", "")
+            task["diff_lines"] = orchestration_result.get("diff_lines", [])
+
+        update_payload: Dict[str, Any] = {
+            "id": task_id,
+            "status": final_status,
+            "progress": 100 if final_status == "completed" else 50,
+            "report": orchestration_result.get("report", ""),
+            "user_id": user_id,
+            "judgment": orchestration_result.get("judgment", {}),
+            "task_type": task_type,
+            "file_path": file_path,
+        }
+        if task_type == "code_suggestion":
+            update_payload["suggested_content"] = orchestration_result.get("suggested_content", "")
+            update_payload["diff_lines"] = orchestration_result.get("diff_lines", [])
+
+        await broadcast_update({"type": "task_update", "task": update_payload})
+    except Exception as e:
+        task["status"] = "error"
+        await broadcast_update({
+            "type": "task_update",
+            "task": {"id": task_id, "status": "error", "progress": 0,
+                     "blocked_reason": str(e), "user_id": user_id, "task_type": task_type}
+        })
+
 
 class VerifyStepRequest(BaseModel):
     intent_token: str
@@ -582,18 +854,66 @@ async def get_policies():
 # ── WebSocket ──────────────────────────────────────────────────────────────────
 
 @app.websocket("/ws/updates")
-async def websocket_endpoint(websocket: WebSocket):
-    """WebSocket for real-time task/agent updates."""
+async def websocket_endpoint(websocket: WebSocket, session_id: str = "anonymous"):
+    """WebSocket for real-time task/agent updates. Supports multi-user collaboration."""
     await websocket.accept()
-    active_websockets.add(websocket)
+    active_websockets[websocket] = session_id
 
     try:
-        # Send initial state: all current agent statuses
+        # Send initial state: agent statuses
         await websocket.send_json({
             "type": "connected",
             "timestamp": datetime.utcnow().isoformat(),
             "agents": list(get_all_agent_statuses().values()),
         })
+
+        # Send all existing tasks (in-memory first, fallback to SpacetimeDB)
+        existing_tasks = list(tasks_db.values())
+        if not existing_tasks:
+            # Only hit SpacetimeDB if memory is empty (e.g., after restart)
+            spacetime_tasks = await db.get_all_tasks()
+            # Normalize SpacetimeDB rows to match tasks_db shape
+            existing_tasks = [
+                {
+                    "task_id": t.get("id", t.get("task_id", "")),
+                    "user_request": t.get("user_request", ""),
+                    "status": t.get("status", "queued"),
+                    "progress": t.get("progress", 0),
+                    "user_id": t.get("user_id", "anonymous"),
+                    "created_at": t.get("created_at", datetime.utcnow().isoformat()),
+                    "intent_hash": t.get("intent_hash", ""),
+                    "blocked_reason": t.get("blocked_reason"),
+                }
+                for t in spacetime_tasks
+            ]
+
+        await websocket.send_json({
+            "type": "existing_tasks",
+            "tasks": [
+                {
+                    "id": t.get("task_id", t.get("id", "")),
+                    "user_request": t.get("user_request", ""),
+                    "status": t.get("status", "queued"),
+                    "progress": t.get("progress", 0),
+                    "user_id": t.get("user_id", "anonymous"),
+                    "created_at": t.get("created_at", datetime.utcnow().isoformat()),
+                    "plan_id": t.get("intent_hash"),
+                    "blocked_reason": t.get("blocked_reason"),
+                    # Codespace fields — needed so handleTaskResult fires correctly on reconnect
+                    "task_type": t.get("task_type"),
+                    "file_path": t.get("file_path"),
+                    "report": t.get("report"),
+                    "suggested_content": t.get("suggested_content"),
+                    "diff_lines": t.get("diff_lines"),
+                    "judgment": t.get("judgment"),
+                }
+                for t in existing_tasks
+            ],
+            "timestamp": datetime.utcnow().isoformat(),
+        })
+
+        # Broadcast live user count to all clients
+        await _broadcast_users_count()
 
         while True:
             data = await websocket.receive_text()
@@ -601,7 +921,9 @@ async def websocket_endpoint(websocket: WebSocket):
     except Exception as e:
         print(f"WebSocket error: {e}")
     finally:
-        active_websockets.discard(websocket)
+        active_websockets.pop(websocket, None)
+        # Broadcast updated user count after disconnect
+        await _broadcast_users_count()
 
 # ── Lifecycle events ───────────────────────────────────────────────────────────
 

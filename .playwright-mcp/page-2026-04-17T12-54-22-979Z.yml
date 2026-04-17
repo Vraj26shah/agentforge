@@ -1,0 +1,119 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e5]:
+      - generic [ref=e6]:
+        - generic [ref=e7]:
+          - generic [ref=e8]:
+            - img [ref=e10]
+            - heading "AgentForge" [level=1] [ref=e12]
+            - generic [ref=e13]: v0.1.0
+          - paragraph [ref=e14]: Multi-Agent AI Orchestration Platform — ArmorIQ Intent Verification + SpacetimeDB Real-time Sync
+        - generic [ref=e15]:
+          - button "Active Role Junior Engineer" [ref=e17] [cursor=pointer]:
+            - img [ref=e18]
+            - generic [ref=e20]:
+              - generic [ref=e21]: Active Role
+              - generic [ref=e22]: Junior Engineer
+            - img [ref=e23]
+          - generic [ref=e25]:
+            - generic [ref=e27]: Live
+            - generic [ref=e28]: ws://backend:8000
+      - generic [ref=e29]:
+        - generic [ref=e30]:
+          - generic [ref=e31]: Total Tasks
+          - generic [ref=e32]: "0"
+        - generic [ref=e33]:
+          - generic [ref=e34]: Completed
+          - generic [ref=e35]: "0"
+        - generic [ref=e36]:
+          - generic [ref=e37]: Blocked
+          - generic [ref=e38]: "0"
+        - generic [ref=e39]:
+          - generic [ref=e40]: Active Agents
+          - generic [ref=e41]: 0/4
+        - generic [ref=e42]:
+          - generic [ref=e43]: Log Entries
+          - generic [ref=e44]: "3"
+        - generic [ref=e45]:
+          - generic [ref=e46]: Live Users
+          - generic [ref=e47]: "3"
+      - navigation [ref=e48]:
+        - button "Dashboard" [ref=e49] [cursor=pointer]:
+          - img [ref=e50]
+          - text: Dashboard
+        - button "Task Flow" [ref=e52] [cursor=pointer]:
+          - img [ref=e53]
+          - text: Task Flow
+        - button "Agents" [ref=e55] [cursor=pointer]:
+          - img [ref=e56]
+          - text: Agents
+        - button "Architecture" [ref=e58] [cursor=pointer]:
+          - img [ref=e59]
+          - text: Architecture
+        - button "Live Logs" [ref=e61] [cursor=pointer]:
+          - img [ref=e62]
+          - text: Live Logs
+        - button "Codespace" [ref=e64] [cursor=pointer]:
+          - img [ref=e65]
+          - text: Codespace
+  - main [ref=e67]:
+    - generic [ref=e68]:
+      - generic [ref=e69]:
+        - generic [ref=e70]:
+          - generic [ref=e71]:
+            - heading "Submit Request" [level=2] [ref=e72]
+            - paragraph [ref=e73]:
+              - text: Submitting as
+              - strong [ref=e74]: junior engineer
+              - text: — ArmorIQ + Analyzer will judge intent before execution
+          - generic [ref=e75]:
+            - generic [ref=e76]:
+              - generic [ref=e77]: User Request
+              - textbox "Describe what you want the agents to do..." [ref=e78]
+              - generic [ref=e80]: 0 characters
+            - generic [ref=e81]:
+              - generic [ref=e82]: SAMPLE REQUESTS
+              - generic [ref=e83]:
+                - button "Analyze sales data from Q1 and generate a summary report" [ref=e84] [cursor=pointer]
+                - button "Delete the old config file from the project" [ref=e85] [cursor=pointer]
+                - button "Drop the staging database and reset it" [ref=e86] [cursor=pointer]
+                - button "Deploy the latest build to production" [ref=e87] [cursor=pointer]
+            - generic [ref=e88]:
+              - generic [ref=e89]: Context — optional JSON
+              - 'textbox "{\"department\": \"sales\", \"timeframe\": \"Q1\"}" [ref=e90]'
+            - button "Submit as junior engineer" [disabled] [ref=e91]:
+              - img [ref=e92]
+              - text: Submit as junior engineer
+        - generic [ref=e95]:
+          - heading "System Configuration" [level=3] [ref=e96]
+          - generic [ref=e97]:
+            - generic [ref=e98]:
+              - generic [ref=e99]: LLM Engine
+              - generic [ref=e102]: Ollama / Mistral
+            - generic [ref=e103]:
+              - generic [ref=e104]: Security Layer
+              - generic [ref=e107]: ArmorIQ Intent Verify
+            - generic [ref=e108]:
+              - generic [ref=e109]: RBAC Enforcement
+              - generic [ref=e112]: Analyzer + ArmorIQ
+            - generic [ref=e113]:
+              - generic [ref=e114]: Database
+              - generic [ref=e117]: SpacetimeDB (real-time)
+            - generic [ref=e118]:
+              - generic [ref=e119]: Active Role
+              - generic [ref=e122]: junior engineer
+            - generic [ref=e123]:
+              - generic [ref=e124]: Agents Available
+              - generic [ref=e127]: 4 agents
+      - generic [ref=e128]:
+        - generic [ref=e129]:
+          - generic [ref=e130]:
+            - heading "Task History" [level=2] [ref=e131]
+            - paragraph [ref=e132]: Click a task to see judgment + final report
+          - generic [ref=e133]:
+            - generic [ref=e134]: 0 tasks
+            - generic [ref=e135]: 3 live
+        - generic [ref=e137]:
+          - img [ref=e139]
+          - paragraph [ref=e141]: No tasks yet
+          - paragraph [ref=e142]: Submit a request to see agent execution here

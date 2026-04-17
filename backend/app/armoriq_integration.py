@@ -23,6 +23,109 @@ class PolicyAction(str, Enum):
     BLOCK = "block"
     REQUIRE_APPROVAL = "require_approval"
 
+class UserRole(str, Enum):
+    """User roles for RBAC enforcement"""
+    JUNIOR_ENGINEER = "junior_engineer"
+    SENIOR_DEVELOPER = "senior_developer"
+    TECH_LEAD = "tech_lead"
+    ADMIN = "admin"
+
+class IntentCategory(str, Enum):
+    """Classified intent categories from user requests"""
+    READ = "read"
+    WRITE = "write"
+    CODE_CHANGE = "code_change"
+    DELETE_FILE = "delete_file"
+    DELETE_DATABASE = "delete_database"
+    DEPLOY = "deploy"
+    SYSTEM_COMMAND = "system_command"
+    ADMIN_ACTION = "admin_action"
+
+# Role-Based Access Control matrix: role → intent → PolicyAction
+RBAC_MATRIX: Dict[UserRole, Dict[IntentCategory, PolicyAction]] = {
+    UserRole.JUNIOR_ENGINEER: {
+        IntentCategory.READ: PolicyAction.ALLOW,
+        IntentCategory.WRITE: PolicyAction.ALLOW,
+        IntentCategory.CODE_CHANGE: PolicyAction.ALLOW,
+        IntentCategory.DELETE_FILE: PolicyAction.BLOCK,
+        IntentCategory.DELETE_DATABASE: PolicyAction.BLOCK,
+        IntentCategory.DEPLOY: PolicyAction.BLOCK,
+        IntentCategory.SYSTEM_COMMAND: PolicyAction.BLOCK,
+        IntentCategory.ADMIN_ACTION: PolicyAction.BLOCK,
+    },
+    UserRole.SENIOR_DEVELOPER: {
+        IntentCategory.READ: PolicyAction.ALLOW,
+        IntentCategory.WRITE: PolicyAction.ALLOW,
+        IntentCategory.CODE_CHANGE: PolicyAction.ALLOW,
+        IntentCategory.DELETE_FILE: PolicyAction.ALLOW,
+        IntentCategory.DELETE_DATABASE: PolicyAction.REQUIRE_APPROVAL,
+        IntentCategory.DEPLOY: PolicyAction.ALLOW,
+        IntentCategory.SYSTEM_COMMAND: PolicyAction.REQUIRE_APPROVAL,
+        IntentCategory.ADMIN_ACTION: PolicyAction.BLOCK,
+    },
+    UserRole.TECH_LEAD: {
+        IntentCategory.READ: PolicyAction.ALLOW,
+        IntentCategory.WRITE: PolicyAction.ALLOW,
+        IntentCategory.CODE_CHANGE: PolicyAction.ALLOW,
+        IntentCategory.DELETE_FILE: PolicyAction.ALLOW,
+        IntentCategory.DELETE_DATABASE: PolicyAction.REQUIRE_APPROVAL,
+        IntentCategory.DEPLOY: PolicyAction.ALLOW,
+        IntentCategory.SYSTEM_COMMAND: PolicyAction.ALLOW,
+        IntentCategory.ADMIN_ACTION: PolicyAction.REQUIRE_APPROVAL,
+    },
+    UserRole.ADMIN: {
+        IntentCategory.READ: PolicyAction.ALLOW,
+        IntentCategory.WRITE: PolicyAction.ALLOW,
+        IntentCategory.CODE_CHANGE: PolicyAction.ALLOW,
+        IntentCategory.DELETE_FILE: PolicyAction.ALLOW,
+        IntentCategory.DELETE_DATABASE: PolicyAction.ALLOW,
+        IntentCategory.DEPLOY: PolicyAction.ALLOW,
+        IntentCategory.SYSTEM_COMMAND: PolicyAction.ALLOW,
+        IntentCategory.ADMIN_ACTION: PolicyAction.ALLOW,
+    },
+}
+
+BLOCK_REASONS: Dict[IntentCategory, Dict[UserRole, str]] = {
+    IntentCategory.DELETE_FILE: {
+        UserRole.JUNIOR_ENGINEER: "Junior engineers cannot delete files. Escalate to a Senior Developer.",
+    },
+    IntentCategory.DELETE_DATABASE: {
+        UserRole.JUNIOR_ENGINEER: "Junior engineers cannot delete databases. Escalate to Admin.",
+        UserRole.SENIOR_DEVELOPER: "Database deletion requires approval from Tech Lead or Admin.",
+        UserRole.TECH_LEAD: "Database deletion requires approval from Admin.",
+    },
+    IntentCategory.DEPLOY: {
+        UserRole.JUNIOR_ENGINEER: "Junior engineers cannot deploy. Escalate to Senior Developer.",
+    },
+    IntentCategory.SYSTEM_COMMAND: {
+        UserRole.JUNIOR_ENGINEER: "Junior engineers cannot run system commands.",
+        UserRole.SENIOR_DEVELOPER: "System command requires approval from Tech Lead.",
+    },
+    IntentCategory.ADMIN_ACTION: {
+        UserRole.JUNIOR_ENGINEER: "Junior engineers cannot perform admin actions.",
+        UserRole.SENIOR_DEVELOPER: "Senior developers cannot perform admin actions.",
+        UserRole.TECH_LEAD: "Admin actions require approval from Admin.",
+    },
+}
+
+@dataclass
+class RBACJudgment:
+    """Result of RBAC evaluation combining intent classification + role policy"""
+    allowed: bool
+    role: str
+    intent_category: str
+    risk_level: str
+    intent_description: str
+    intent_reasoning: str
+    policy_action: str
+    judgment_reason: str
+    requires_approval_from: Optional[str] = None
+    timestamp: str = None
+
+    def __post_init__(self):
+        if self.timestamp is None:
+            self.timestamp = datetime.utcnow().isoformat()
+
 @dataclass
 class IntentToken:
     """ArmorIQ Intent Token - Cryptographically signed JWT"""
@@ -390,6 +493,92 @@ class ArmorIQClient:
                     return False
 
         return True
+
+    def check_rbac(
+        self,
+        role: str,
+        intent_classification: Dict[str, Any],
+    ) -> "RBACJudgment":
+        """
+        Evaluate RBAC policy: does this role allow this classified intent?
+
+        Args:
+            role: UserRole string (e.g. "junior_engineer")
+            intent_classification: dict from Analyzer with keys:
+                category, risk_level, description, reasoning
+
+        Returns:
+            RBACJudgment with allowed=True/False plus full reasoning
+        """
+        category_str = intent_classification.get("category", "read")
+        risk_level = intent_classification.get("risk_level", "low")
+        description = intent_classification.get("description", "")
+        reasoning = intent_classification.get("reasoning", "")
+
+        # Normalize role and category
+        try:
+            user_role = UserRole(role)
+        except ValueError:
+            user_role = UserRole.JUNIOR_ENGINEER
+
+        try:
+            intent_cat = IntentCategory(category_str)
+        except ValueError:
+            intent_cat = IntentCategory.READ
+
+        policy_matrix = RBAC_MATRIX.get(user_role, RBAC_MATRIX[UserRole.JUNIOR_ENGINEER])
+        policy_action = policy_matrix.get(intent_cat, PolicyAction.BLOCK)
+
+        if policy_action == PolicyAction.ALLOW:
+            return RBACJudgment(
+                allowed=True,
+                role=user_role.value,
+                intent_category=intent_cat.value,
+                risk_level=risk_level,
+                intent_description=description,
+                intent_reasoning=reasoning,
+                policy_action=policy_action.value,
+                judgment_reason=f"✅ ALLOWED — {user_role.value} has permission to perform '{intent_cat.value}' actions.",
+            )
+        elif policy_action == PolicyAction.REQUIRE_APPROVAL:
+            # Determine who can approve
+            approver_map = {
+                (UserRole.SENIOR_DEVELOPER, IntentCategory.DELETE_DATABASE): "Tech Lead or Admin",
+                (UserRole.SENIOR_DEVELOPER, IntentCategory.SYSTEM_COMMAND): "Tech Lead",
+                (UserRole.TECH_LEAD, IntentCategory.DELETE_DATABASE): "Admin",
+                (UserRole.TECH_LEAD, IntentCategory.ADMIN_ACTION): "Admin",
+            }
+            approver = approver_map.get((user_role, intent_cat), "a higher authority")
+            block_msg = BLOCK_REASONS.get(intent_cat, {}).get(
+                user_role,
+                f"This action requires approval from {approver}."
+            )
+            return RBACJudgment(
+                allowed=False,
+                role=user_role.value,
+                intent_category=intent_cat.value,
+                risk_level=risk_level,
+                intent_description=description,
+                intent_reasoning=reasoning,
+                policy_action=policy_action.value,
+                judgment_reason=f"⏳ REQUIRES APPROVAL — {block_msg}",
+                requires_approval_from=approver,
+            )
+        else:  # BLOCK
+            block_msg = BLOCK_REASONS.get(intent_cat, {}).get(
+                user_role,
+                f"Your role '{user_role.value}' does not have permission for '{intent_cat.value}' actions."
+            )
+            return RBACJudgment(
+                allowed=False,
+                role=user_role.value,
+                intent_category=intent_cat.value,
+                risk_level=risk_level,
+                intent_description=description,
+                intent_reasoning=reasoning,
+                policy_action=policy_action.value,
+                judgment_reason=f"🚫 BLOCKED — {block_msg}",
+            )
 
     def add_policy(self, policy: PolicyRule):
         """Add a new security policy"""

@@ -1,0 +1,629 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e5]:
+      - generic [ref=e6]:
+        - generic [ref=e7]:
+          - generic [ref=e8]:
+            - img [ref=e10]
+            - heading "AgentForge" [level=1] [ref=e12]
+            - generic [ref=e13]: v0.1.0
+          - paragraph [ref=e14]: Multi-Agent AI Orchestration Platform — ArmorIQ Intent Verification + SpacetimeDB Real-time Sync
+        - generic [ref=e15]:
+          - button "Active Role Junior Engineer" [ref=e17] [cursor=pointer]:
+            - img [ref=e18]
+            - generic [ref=e20]:
+              - generic [ref=e21]: Active Role
+              - generic [ref=e22]: Junior Engineer
+            - img [ref=e23]
+          - generic [ref=e25]:
+            - generic [ref=e27]: Live
+            - generic [ref=e28]: ws://backend:8000
+      - generic [ref=e29]:
+        - generic [ref=e30]:
+          - generic [ref=e31]: Total Tasks
+          - generic [ref=e32]: "0"
+        - generic [ref=e33]:
+          - generic [ref=e34]: Completed
+          - generic [ref=e35]: "0"
+        - generic [ref=e36]:
+          - generic [ref=e37]: Blocked
+          - generic [ref=e38]: "0"
+        - generic [ref=e39]:
+          - generic [ref=e40]: Active Agents
+          - generic [ref=e41]: 0/4
+        - generic [ref=e42]:
+          - generic [ref=e43]: Log Entries
+          - generic [ref=e44]: "4"
+        - generic [ref=e45]:
+          - generic [ref=e46]: Live Users
+          - generic [ref=e47]: "4"
+      - navigation [ref=e48]:
+        - button "Dashboard" [ref=e49] [cursor=pointer]:
+          - img [ref=e50]
+          - text: Dashboard
+        - button "Task Flow" [ref=e52] [cursor=pointer]:
+          - img [ref=e53]
+          - text: Task Flow
+        - button "Agents" [ref=e55] [cursor=pointer]:
+          - img [ref=e56]
+          - text: Agents
+        - button "Architecture" [ref=e58] [cursor=pointer]:
+          - img [ref=e59]
+          - text: Architecture
+        - button "Live Logs" [ref=e61] [cursor=pointer]:
+          - img [ref=e62]
+          - text: Live Logs
+        - button "Codespace" [ref=e64] [cursor=pointer]:
+          - img [ref=e65]
+          - text: Codespace
+  - main [ref=e67]:
+    - generic [ref=e143]:
+      - generic [ref=e144]:
+        - generic [ref=e145]:
+          - generic [ref=e146]:
+            - generic [ref=e147]: Explorer
+            - generic [ref=e148]:
+              - button "↻" [ref=e149] [cursor=pointer]
+              - button "＋" [ref=e150] [cursor=pointer]
+          - generic [ref=e151]:
+            - button "⬆ Import" [ref=e152] [cursor=pointer]:
+              - generic [ref=e153]: ⬆
+              - text: Import
+            - button "📂 Open" [ref=e154] [cursor=pointer]:
+              - generic [ref=e155]: 📂
+              - text: Open
+        - generic [ref=e156]:
+          - generic [ref=e157]:
+            - button "▾ 📂 backend" [ref=e158] [cursor=pointer]:
+              - generic [ref=e159]: ▾
+              - generic [ref=e160]: 📂
+              - generic [ref=e161]: backend
+            - generic [ref=e162]:
+              - button "▾ 📂 app" [ref=e163] [cursor=pointer]:
+                - generic [ref=e164]: ▾
+                - generic [ref=e165]: 📂
+                - generic [ref=e166]: app
+              - button "🐍 __init__.py" [ref=e167] [cursor=pointer]:
+                - generic [ref=e168]: 🐍
+                - generic [ref=e169]: __init__.py
+              - button "🐍 agents.py" [active] [ref=e170] [cursor=pointer]:
+                - generic [ref=e171]: 🐍
+                - generic [ref=e172]: agents.py
+              - button "🐍 armoriq_integration.py" [ref=e173] [cursor=pointer]:
+                - generic [ref=e174]: 🐍
+                - generic [ref=e175]: armoriq_integration.py
+              - button "🐍 codespace.py" [ref=e176] [cursor=pointer]:
+                - generic [ref=e177]: 🐍
+                - generic [ref=e178]: codespace.py
+              - button "🐍 main.py" [ref=e179] [cursor=pointer]:
+                - generic [ref=e180]: 🐍
+                - generic [ref=e181]: main.py
+              - button "🐍 orchestrator.py" [ref=e182] [cursor=pointer]:
+                - generic [ref=e183]: 🐍
+                - generic [ref=e184]: orchestrator.py
+              - button "🐍 spacetime.py" [ref=e185] [cursor=pointer]:
+                - generic [ref=e186]: 🐍
+                - generic [ref=e187]: spacetime.py
+            - button "📃 Dockerfile" [ref=e188] [cursor=pointer]:
+              - generic [ref=e189]: 📃
+              - generic [ref=e190]: Dockerfile
+            - button "📃 requirements.txt" [ref=e191] [cursor=pointer]:
+              - generic [ref=e192]: 📃
+              - generic [ref=e193]: requirements.txt
+          - generic [ref=e194]:
+            - button "▾ 📂 claude" [ref=e195] [cursor=pointer]:
+              - generic [ref=e196]: ▾
+              - generic [ref=e197]: 📂
+              - generic [ref=e198]: claude
+            - button "📋 settings.json" [ref=e199] [cursor=pointer]:
+              - generic [ref=e200]: 📋
+              - generic [ref=e201]: settings.json
+          - generic [ref=e202]:
+            - button "▾ 📂 frontend" [ref=e203] [cursor=pointer]:
+              - generic [ref=e204]: ▾
+              - generic [ref=e205]: 📂
+              - generic [ref=e206]: frontend
+            - generic [ref=e207]:
+              - button "▾ 📂 src" [ref=e208] [cursor=pointer]:
+                - generic [ref=e209]: ▾
+                - generic [ref=e210]: 📂
+                - generic [ref=e211]: src
+              - button "▸ 📁 components" [ref=e213] [cursor=pointer]:
+                - generic [ref=e214]: ▸
+                - generic [ref=e215]: 📁
+                - generic [ref=e216]: components
+              - 'button "▸ 📁 {components}" [ref=e218] [cursor=pointer]':
+                - generic [ref=e219]: ▸
+                - generic [ref=e220]: 📁
+                - generic [ref=e221]: "{components}"
+              - button "🔷 App.tsx" [ref=e222] [cursor=pointer]:
+                - generic [ref=e223]: 🔷
+                - generic [ref=e224]: App.tsx
+              - button "🎨 index.css" [ref=e225] [cursor=pointer]:
+                - generic [ref=e226]: 🎨
+                - generic [ref=e227]: index.css
+              - button "🔷 main.tsx" [ref=e228] [cursor=pointer]:
+                - generic [ref=e229]: 🔷
+                - generic [ref=e230]: main.tsx
+            - button "📃 Dockerfile" [ref=e231] [cursor=pointer]:
+              - generic [ref=e232]: 📃
+              - generic [ref=e233]: Dockerfile
+            - button "📃 index.html" [ref=e234] [cursor=pointer]:
+              - generic [ref=e235]: 📃
+              - generic [ref=e236]: index.html
+            - button "📋 package-lock.json" [ref=e237] [cursor=pointer]:
+              - generic [ref=e238]: 📋
+              - generic [ref=e239]: package-lock.json
+            - button "📋 package.json" [ref=e240] [cursor=pointer]:
+              - generic [ref=e241]: 📋
+              - generic [ref=e242]: package.json
+            - button "📃 postcss.config.js" [ref=e243] [cursor=pointer]:
+              - generic [ref=e244]: 📃
+              - generic [ref=e245]: postcss.config.js
+            - button "📃 tailwind.config.js" [ref=e246] [cursor=pointer]:
+              - generic [ref=e247]: 📃
+              - generic [ref=e248]: tailwind.config.js
+            - button "📋 tsconfig.json" [ref=e249] [cursor=pointer]:
+              - generic [ref=e250]: 📋
+              - generic [ref=e251]: tsconfig.json
+            - button "🔷 vite.config.ts" [ref=e252] [cursor=pointer]:
+              - generic [ref=e253]: 🔷
+              - generic [ref=e254]: vite.config.ts
+          - button "▾ 📂 scripts" [ref=e256] [cursor=pointer]:
+            - generic [ref=e257]: ▾
+            - generic [ref=e258]: 📂
+            - generic [ref=e259]: scripts
+          - generic [ref=e260]:
+            - button "▾ 📂 spacetimedb" [ref=e261] [cursor=pointer]:
+              - generic [ref=e262]: ▾
+              - generic [ref=e263]: 📂
+              - generic [ref=e264]: spacetimedb
+            - generic [ref=e265]:
+              - button "▾ 📂 src" [ref=e266] [cursor=pointer]:
+                - generic [ref=e267]: ▾
+                - generic [ref=e268]: 📂
+                - generic [ref=e269]: src
+              - button "🦀 lib.rs" [ref=e270] [cursor=pointer]:
+                - generic [ref=e271]: 🦀
+                - generic [ref=e272]: lib.rs
+              - button "🔷 lib.ts" [ref=e273] [cursor=pointer]:
+                - generic [ref=e274]: 🔷
+                - generic [ref=e275]: lib.ts
+            - button "🔧 Cargo.toml" [ref=e276] [cursor=pointer]:
+              - generic [ref=e277]: 🔧
+              - generic [ref=e278]: Cargo.toml
+            - button "📋 tsconfig.json" [ref=e279] [cursor=pointer]:
+              - generic [ref=e280]: 📋
+              - generic [ref=e281]: tsconfig.json
+          - button "📃 .env" [ref=e282] [cursor=pointer]:
+            - generic [ref=e283]: 📃
+            - generic [ref=e284]: .env
+          - button "📃 .gitignore" [ref=e285] [cursor=pointer]:
+            - generic [ref=e286]: 📃
+            - generic [ref=e287]: .gitignore
+          - button "⚡ agentforge.sh" [ref=e288] [cursor=pointer]:
+            - generic [ref=e289]: ⚡
+            - generic [ref=e290]: agentforge.sh
+          - button "📄 ARCHITECTURE_TECHNICAL_GUIDE.md" [ref=e291] [cursor=pointer]:
+            - generic [ref=e292]: 📄
+            - generic [ref=e293]: ARCHITECTURE_TECHNICAL_GUIDE.md
+          - button "📄 CLAUDE.md" [ref=e294] [cursor=pointer]:
+            - generic [ref=e295]: 📄
+            - generic [ref=e296]: CLAUDE.md
+          - button "📄 COMPLETE_GUIDE.md" [ref=e297] [cursor=pointer]:
+            - generic [ref=e298]: 📄
+            - generic [ref=e299]: COMPLETE_GUIDE.md
+          - button "⚙️ docker-compose.yml" [ref=e300] [cursor=pointer]:
+            - generic [ref=e301]: ⚙️
+            - generic [ref=e302]: docker-compose.yml
+          - button "⚡ health.sh" [ref=e303] [cursor=pointer]:
+            - generic [ref=e304]: ⚡
+            - generic [ref=e305]: health.sh
+          - button "📄 JUDGE_PRESENTATION.md" [ref=e306] [cursor=pointer]:
+            - generic [ref=e307]: 📄
+            - generic [ref=e308]: JUDGE_PRESENTATION.md
+          - button "📄 MULTI_USER_IMPLEMENTATION.md" [ref=e309] [cursor=pointer]:
+            - generic [ref=e310]: 📄
+            - generic [ref=e311]: MULTI_USER_IMPLEMENTATION.md
+          - button "📃 page-initial.png" [ref=e312] [cursor=pointer]:
+            - generic [ref=e313]: 📃
+            - generic [ref=e314]: page-initial.png
+          - button "📄 PROJECT_DOCUMENTATION.md" [ref=e315] [cursor=pointer]:
+            - generic [ref=e316]: 📄
+            - generic [ref=e317]: PROJECT_DOCUMENTATION.md
+          - button "📄 README.md" [ref=e318] [cursor=pointer]:
+            - generic [ref=e319]: 📄
+            - generic [ref=e320]: README.md
+          - button "📄 SCRIPT_GUIDE.md" [ref=e321] [cursor=pointer]:
+            - generic [ref=e322]: 📄
+            - generic [ref=e323]: SCRIPT_GUIDE.md
+          - button "⚡ start.sh" [ref=e324] [cursor=pointer]:
+            - generic [ref=e325]: ⚡
+            - generic [ref=e326]: start.sh
+          - button "⚡ test_armoriq.sh" [ref=e327] [cursor=pointer]:
+            - generic [ref=e328]: ⚡
+            - generic [ref=e329]: test_armoriq.sh
+          - button "⚡ test_integration.sh" [ref=e330] [cursor=pointer]:
+            - generic [ref=e331]: ⚡
+            - generic [ref=e332]: test_integration.sh
+      - generic [ref=e333]:
+        - generic [ref=e334]:
+          - generic [ref=e335]: backend/app/agents.py
+          - button "Save" [disabled] [ref=e337]
+        - generic [ref=e338]:
+          - generic [ref=e366]:
+            - generic [ref=e367]: "1"
+            - generic [ref=e368]: "2"
+            - generic [ref=e369]: "3"
+            - generic [ref=e370]: "4"
+            - generic [ref=e371]: "5"
+            - generic [ref=e372]: "6"
+            - generic [ref=e373]: "7"
+            - generic [ref=e374]: "8"
+            - generic [ref=e375]: "9"
+            - generic [ref=e376]: "10"
+            - generic [ref=e377]: "11"
+            - generic [ref=e378]: "12"
+            - generic [ref=e379]: "13"
+            - generic [ref=e380]: "14"
+            - generic [ref=e381]: "15"
+            - generic [ref=e382]: "16"
+            - generic [ref=e383]: "17"
+            - generic [ref=e384]: "18"
+            - generic [ref=e385]: "19"
+            - generic [ref=e386]: "20"
+            - generic [ref=e387]: "21"
+            - generic [ref=e388]: "22"
+            - generic [ref=e389]: "23"
+            - generic [ref=e390]: "24"
+            - generic [ref=e391]: "25"
+            - generic [ref=e392]: "26"
+            - generic [ref=e393]: "27"
+            - generic [ref=e394]: "28"
+            - generic [ref=e395]: "29"
+            - generic [ref=e396]: "30"
+            - generic [ref=e397]: "31"
+            - generic [ref=e398]: "32"
+            - generic [ref=e399]: "33"
+            - generic [ref=e400]: "34"
+            - generic [ref=e401]: "35"
+            - generic [ref=e402]: "36"
+            - generic [ref=e403]: "37"
+            - generic [ref=e404]: "38"
+            - generic [ref=e405]: "39"
+            - generic [ref=e406]: "40"
+            - generic [ref=e407]: "41"
+            - generic [ref=e408]: "42"
+            - generic [ref=e409]: "43"
+            - generic [ref=e410]: "44"
+            - generic [ref=e411]: "45"
+            - generic [ref=e412]: "46"
+            - generic [ref=e413]: "47"
+            - generic [ref=e414]: "48"
+            - generic [ref=e415]: "49"
+            - generic [ref=e416]: "50"
+            - generic [ref=e417]: "51"
+            - generic [ref=e418]: "52"
+            - generic [ref=e419]: "53"
+            - generic [ref=e420]: "54"
+            - generic [ref=e421]: "55"
+            - generic [ref=e422]: "56"
+            - generic [ref=e423]: "57"
+            - generic [ref=e424]: "58"
+            - generic [ref=e425]: "59"
+            - generic [ref=e426]: "60"
+            - generic [ref=e427]: "61"
+            - generic [ref=e428]: "62"
+            - generic [ref=e429]: "63"
+            - generic [ref=e430]: "64"
+            - generic [ref=e431]: "65"
+            - generic [ref=e432]: "66"
+            - generic [ref=e433]: "67"
+            - generic [ref=e434]: "68"
+            - generic [ref=e435]: "69"
+            - generic [ref=e436]: "70"
+            - generic [ref=e437]: "71"
+            - generic [ref=e438]: "72"
+            - generic [ref=e439]: "73"
+            - generic [ref=e440]: "74"
+            - generic [ref=e441]: "75"
+            - generic [ref=e442]: "76"
+            - generic [ref=e443]: "77"
+            - generic [ref=e444]: "78"
+            - generic [ref=e445]: "79"
+            - generic [ref=e446]: "80"
+            - generic [ref=e447]: "81"
+            - generic [ref=e448]: "82"
+            - generic [ref=e449]: "83"
+            - generic [ref=e450]: "84"
+            - generic [ref=e451]: "85"
+            - generic [ref=e452]: "86"
+            - generic [ref=e453]: "87"
+            - generic [ref=e454]: "88"
+            - generic [ref=e455]: "89"
+            - generic [ref=e456]: "90"
+            - generic [ref=e457]: "91"
+            - generic [ref=e458]: "92"
+            - generic [ref=e459]: "93"
+            - generic [ref=e460]: "94"
+            - generic [ref=e461]: "95"
+            - generic [ref=e462]: "96"
+            - generic [ref=e463]: "97"
+            - generic [ref=e464]: "98"
+            - generic [ref=e465]: "99"
+            - generic [ref=e466]: "100"
+            - generic [ref=e467]: "101"
+            - generic [ref=e468]: "102"
+            - generic [ref=e469]: "103"
+            - generic [ref=e470]: "104"
+            - generic [ref=e471]: "105"
+            - generic [ref=e472]: "106"
+            - generic [ref=e473]: "107"
+            - generic [ref=e474]: "108"
+            - generic [ref=e475]: "109"
+            - generic [ref=e476]: "110"
+            - generic [ref=e477]: "111"
+            - generic [ref=e478]: "112"
+            - generic [ref=e479]: "113"
+            - generic [ref=e480]: "114"
+            - generic [ref=e481]: "115"
+            - generic [ref=e482]: "116"
+            - generic [ref=e483]: "117"
+            - generic [ref=e484]: "118"
+            - generic [ref=e485]: "119"
+            - generic [ref=e486]: "120"
+            - generic [ref=e487]: "121"
+            - generic [ref=e488]: "122"
+            - generic [ref=e489]: "123"
+            - generic [ref=e490]: "124"
+            - generic [ref=e491]: "125"
+            - generic [ref=e492]: "126"
+            - generic [ref=e493]: "127"
+            - generic [ref=e494]: "128"
+            - generic [ref=e495]: "129"
+            - generic [ref=e496]: "130"
+            - generic [ref=e497]: "131"
+            - generic [ref=e498]: "132"
+            - generic [ref=e499]: "133"
+            - generic [ref=e500]: "134"
+            - generic [ref=e501]: "135"
+            - generic [ref=e502]: "136"
+            - generic [ref=e503]: "137"
+            - generic [ref=e504]: "138"
+            - generic [ref=e505]: "139"
+            - generic [ref=e506]: "140"
+            - generic [ref=e507]: "141"
+            - generic [ref=e508]: "142"
+            - generic [ref=e509]: "143"
+            - generic [ref=e510]: "144"
+            - generic [ref=e511]: "145"
+            - generic [ref=e512]: "146"
+            - generic [ref=e513]: "147"
+            - generic [ref=e514]: "148"
+            - generic [ref=e515]: "149"
+            - generic [ref=e516]: "150"
+            - generic [ref=e517]: "151"
+            - generic [ref=e518]: "152"
+            - generic [ref=e519]: "153"
+            - generic [ref=e520]: "154"
+            - generic [ref=e521]: "155"
+            - generic [ref=e522]: "156"
+            - generic [ref=e523]: "157"
+            - generic [ref=e524]: "158"
+            - generic [ref=e525]: "159"
+            - generic [ref=e526]: "160"
+            - generic [ref=e527]: "161"
+            - generic [ref=e528]: "162"
+            - generic [ref=e529]: "163"
+            - generic [ref=e530]: "164"
+            - generic [ref=e531]: "165"
+            - generic [ref=e532]: "166"
+            - generic [ref=e533]: "167"
+            - generic [ref=e534]: "168"
+            - generic [ref=e535]: "169"
+            - generic [ref=e536]: "170"
+            - generic [ref=e537]: "171"
+            - generic [ref=e538]: "172"
+            - generic [ref=e539]: "173"
+            - generic [ref=e540]: "174"
+            - generic [ref=e541]: "175"
+            - generic [ref=e542]: "176"
+            - generic [ref=e543]: "177"
+            - generic [ref=e544]: "178"
+            - generic [ref=e545]: "179"
+            - generic [ref=e546]: "180"
+            - generic [ref=e547]: "181"
+            - generic [ref=e548]: "182"
+            - generic [ref=e549]: "183"
+            - generic [ref=e550]: "184"
+            - generic [ref=e551]: "185"
+            - generic [ref=e552]: "186"
+            - generic [ref=e553]: "187"
+            - generic [ref=e554]: "188"
+            - generic [ref=e555]: "189"
+            - generic [ref=e556]: "190"
+            - generic [ref=e557]: "191"
+            - generic [ref=e558]: "192"
+            - generic [ref=e559]: "193"
+            - generic [ref=e560]: "194"
+            - generic [ref=e561]: "195"
+            - generic [ref=e562]: "196"
+            - generic [ref=e563]: "197"
+            - generic [ref=e564]: "198"
+            - generic [ref=e565]: "199"
+            - generic [ref=e566]: "200"
+            - generic [ref=e567]: "201"
+            - generic [ref=e568]: "202"
+            - generic [ref=e569]: "203"
+            - generic [ref=e570]: "204"
+            - generic [ref=e571]: "205"
+            - generic [ref=e572]: "206"
+            - generic [ref=e573]: "207"
+            - generic [ref=e574]: "208"
+            - generic [ref=e575]: "209"
+            - generic [ref=e576]: "210"
+            - generic [ref=e577]: "211"
+            - generic [ref=e578]: "212"
+            - generic [ref=e579]: "213"
+            - generic [ref=e580]: "214"
+            - generic [ref=e581]: "215"
+            - generic [ref=e582]: "216"
+            - generic [ref=e583]: "217"
+            - generic [ref=e584]: "218"
+            - generic [ref=e585]: "219"
+            - generic [ref=e586]: "220"
+            - generic [ref=e587]: "221"
+            - generic [ref=e588]: "222"
+            - generic [ref=e589]: "223"
+            - generic [ref=e590]: "224"
+            - generic [ref=e591]: "225"
+            - generic [ref=e592]: "226"
+            - generic [ref=e593]: "227"
+            - generic [ref=e594]: "228"
+            - generic [ref=e595]: "229"
+            - generic [ref=e596]: "230"
+            - generic [ref=e597]: "231"
+            - generic [ref=e598]: "232"
+            - generic [ref=e599]: "233"
+            - generic [ref=e600]: "234"
+            - generic [ref=e601]: "235"
+            - generic [ref=e602]: "236"
+            - generic [ref=e603]: "237"
+            - generic [ref=e604]: "238"
+            - generic [ref=e605]: "239"
+            - generic [ref=e606]: "240"
+            - generic [ref=e607]: "241"
+            - generic [ref=e608]: "242"
+            - generic [ref=e609]: "243"
+            - generic [ref=e610]: "244"
+            - generic [ref=e611]: "245"
+            - generic [ref=e612]: "246"
+            - generic [ref=e613]: "247"
+            - generic [ref=e614]: "248"
+            - generic [ref=e615]: "249"
+            - generic [ref=e616]: "250"
+            - generic [ref=e617]: "251"
+            - generic [ref=e618]: "252"
+            - generic [ref=e619]: "253"
+            - generic [ref=e620]: "254"
+            - generic [ref=e621]: "255"
+            - generic [ref=e622]: "256"
+            - generic [ref=e623]: "257"
+            - generic [ref=e624]: "258"
+            - generic [ref=e625]: "259"
+            - generic [ref=e626]: "260"
+            - generic [ref=e627]: "261"
+            - generic [ref=e628]: "262"
+            - generic [ref=e629]: "263"
+            - generic [ref=e630]: "264"
+            - generic [ref=e631]: "265"
+            - generic [ref=e632]: "266"
+            - generic [ref=e633]: "267"
+            - generic [ref=e634]: "268"
+            - generic [ref=e635]: "269"
+            - generic [ref=e636]: "270"
+            - generic [ref=e637]: "271"
+            - generic [ref=e638]: "272"
+            - generic [ref=e639]: "273"
+            - generic [ref=e640]: "274"
+            - generic [ref=e641]: "275"
+            - generic [ref=e642]: "276"
+            - generic [ref=e643]: "277"
+            - generic [ref=e644]: "278"
+            - generic [ref=e645]: "279"
+            - generic [ref=e646]: "280"
+            - generic [ref=e647]: "281"
+            - generic [ref=e648]: "282"
+            - generic [ref=e649]: "283"
+            - generic [ref=e650]: "284"
+            - generic [ref=e651]: "285"
+            - generic [ref=e652]: "286"
+            - generic [ref=e653]: "287"
+            - generic [ref=e654]: "288"
+            - generic [ref=e655]: "289"
+            - generic [ref=e656]: "290"
+            - generic [ref=e657]: "291"
+            - generic [ref=e658]: "292"
+            - generic [ref=e659]: "293"
+            - generic [ref=e660]: "294"
+            - generic [ref=e661]: "295"
+            - generic [ref=e662]: "296"
+            - generic [ref=e663]: "297"
+            - generic [ref=e664]: "298"
+            - generic [ref=e665]: "299"
+            - generic [ref=e666]: "300"
+            - generic [ref=e667]: "301"
+            - generic [ref=e668]: "302"
+            - generic [ref=e669]: "303"
+            - generic [ref=e670]: "304"
+            - generic [ref=e671]: "305"
+            - generic [ref=e672]: "306"
+            - generic [ref=e673]: "307"
+            - generic [ref=e674]: "308"
+            - generic [ref=e675]: "309"
+            - generic [ref=e676]: "310"
+            - generic [ref=e677]: "311"
+            - generic [ref=e678]: "312"
+            - generic [ref=e679]: "313"
+            - generic [ref=e680]: "314"
+            - generic [ref=e681]: "315"
+            - generic [ref=e682]: "316"
+            - generic [ref=e683]: "317"
+            - generic [ref=e684]: "318"
+            - generic [ref=e685]: "319"
+            - generic [ref=e686]: "320"
+            - generic [ref=e687]: "321"
+            - generic [ref=e688]: "322"
+            - generic [ref=e689]: "323"
+            - generic [ref=e690]: "324"
+            - generic [ref=e691]: "325"
+            - generic [ref=e692]: "326"
+            - generic [ref=e693]: "327"
+            - generic [ref=e694]: "328"
+            - generic [ref=e695]: "329"
+            - generic [ref=e696]: "330"
+            - generic [ref=e697]: "331"
+            - generic [ref=e698]: "332"
+            - generic [ref=e699]: "333"
+            - generic [ref=e700]: "334"
+            - generic [ref=e701]: "335"
+            - generic [ref=e702]: "336"
+            - generic [ref=e703]: "337"
+            - generic [ref=e704]: "338"
+            - generic [ref=e705]: "339"
+            - generic [ref=e706]: "340"
+            - generic [ref=e707]: "341"
+            - generic [ref=e708]: "342"
+            - generic [ref=e709]: "343"
+            - generic [ref=e710]: "344"
+            - generic [ref=e711]: "345"
+            - generic [ref=e712]: "346"
+            - generic [ref=e713]: "347"
+            - generic [ref=e714]: "348"
+            - generic [ref=e715]: "349"
+            - generic [ref=e716]: "350"
+            - generic [ref=e717]: "351"
+            - generic [ref=e718]: "352"
+            - generic [ref=e719]: "353"
+            - generic [ref=e720]: "354"
+            - generic [ref=e721]: "355"
+            - generic [ref=e722]: "356"
+            - generic [ref=e723]: "357"
+            - generic [ref=e724]: "358"
+          - textbox [ref=e725]: "import os import logging from typing import Dict, Any, List, Optional from enum import Enum from datetime import datetime import httpx import json logger = logging.getLogger(__name__) class AgentRole(str, Enum): ANALYZER = \"analyzer\" EXECUTOR = \"executor\" VALIDATOR = \"validator\" REPORTER = \"reporter\" class LLMProvider(str, Enum): OLLAMA = \"ollama\" GEMINI = \"gemini\" class Agent: def __init__( self, id: str, name: str, role: AgentRole, provider: LLMProvider = LLMProvider.OLLAMA, model: Optional[str] = None, capabilities: List[str] = None, system_prompt: Optional[str] = None, ): self.id = id self.name = name self.role = role self.provider = provider self.capabilities = capabilities or [] self.status = \"idle\" self.last_task_id: Optional[str] = None self.system_prompt = system_prompt or self._get_default_prompt() self.execution_count = 0 self.ollama_url = os.getenv(\"OLLAMA_API_URL\", \"http://localhost:11434\") # All agents load both keys so any agent can fall back to either provider self.gemini_api_key = os.getenv(\"GEMINI_API_KEY\", \"\") self.gemini_model = \"gemini-2.5-flash\" # always use correct Gemini model name if provider == LLMProvider.OLLAMA: self.model = model or os.getenv(\"OLLAMA_MODEL\", \"qwen2:0.5b\") else: self.model = model or self.gemini_model def _get_default_prompt(self) -> str: prompts = { AgentRole.ANALYZER: ( \"You are the Analyzer Agent for a software engineering platform.\\n\" \"Your job: read the user request and any provided file/code context carefully,\\n\" \"then output a numbered list of concrete sub-tasks the Executor must perform.\\n\" \"Be specific about what lines, functions, or sections need changing.\\n\" \"Always ground your analysis in the actual file content shown to you.\" ), AgentRole.EXECUTOR: ( \"You are the Executor Agent. You carry out the work identified by the Analyzer.\\n\" \"When given file contents, you MUST modify them according to the request.\\n\" \"For code tasks: output ONLY the complete updated file, no explanation, no markdown fences.\\n\" \"For question/analysis tasks: give a direct, detailed answer based on the file.\" ), AgentRole.VALIDATOR: ( \"You are the Validator Agent. Review the Executor's output against the original request.\\n\" \"Check: does the output correctly address the request? Are there bugs or omissions?\\n\" \"Output a short validation summary: PASS or FAIL, with specific reasons.\" ), AgentRole.REPORTER: ( \"You are the Reporter Agent. Format the final result for the user in a clear, readable way.\\n\" \"For code changes: show what changed and why (diff summary style).\\n\" \"For questions: give a clean, well-structured answer.\\n\" \"Write in plain text or markdown. Be concise and useful.\" ), } return prompts.get(self.role, \"You are an AI agent. Complete the given task.\") async def classify_intent(self, user_request: str) -> Dict[str, Any]: prompt = ( f'You are a strict intent classifier for a software engineering platform.\\n\\n' f'Analyze: \"{user_request}\"\\n\\n' f'Valid categories: read, write, code_change, delete_file, delete_database, deploy, system_command, admin_action\\n' f'Valid risk levels: low, medium, high, critical\\n\\n' f'Respond ONLY with valid JSON (no markdown):\\n' f'{{\"category\": \"...\", \"risk_level\": \"...\", \"description\": \"...\", \"reasoning\": \"...\"}}' ) try: response_text, _ = await self._call_with_fallback(prompt) clean = response_text.strip() if clean.startswith(\"```\"): clean = clean.split(\"```\")[1].lstrip(\"json\").strip() parsed = json.loads(clean) for key in (\"category\", \"risk_level\", \"description\", \"reasoning\"): if key not in parsed: parsed[key] = \"read\" if key == \"category\" else (\"low\" if key == \"risk_level\" else \"\") return parsed except Exception as e: logger.warning(\"[%s] classify_intent fallback: %s\", self.name, str(e)) req = user_request.lower() if any(k in req for k in [\"drop\", \"delete database\", \"truncate\", \"wipe db\"]): return {\"category\": \"delete_database\", \"risk_level\": \"critical\", \"description\": \"DB deletion\", \"reasoning\": \"keyword\"} if any(k in req for k in [\"delete\", \"remove\", \"rm \"]): return {\"category\": \"delete_file\", \"risk_level\": \"high\", \"description\": \"File deletion\", \"reasoning\": \"keyword\"} if any(k in req for k in [\"deploy\", \"push to prod\", \"release\"]): return {\"category\": \"deploy\", \"risk_level\": \"high\", \"description\": \"Deployment\", \"reasoning\": \"keyword\"} return {\"category\": \"read\", \"risk_level\": \"low\", \"description\": \"General request\", \"reasoning\": \"default\"} async def process(self, task: Dict[str, Any]) -> Dict[str, Any]: start_time = datetime.utcnow() self.status = \"working\" self.last_task_id = task.get(\"action_id\") self.execution_count += 1 logger.info(\"[%s] process() started — provider=%s\", self.name, self.provider.value) try: # Use the description directly as the prompt — it already contains # all context (file contents, request, instructions) built by the orchestrator. prompt = task.get(\"description\", \"\") if not prompt: prompt = f\"Original request: {task.get('original_request', 'N/A')}\" response_text, tokens_used = await self._call_with_fallback(prompt) elapsed = int((datetime.utcnow() - start_time).total_seconds() * 1000) logger.info(\"[%s] process() done in %dms, output=%d chars\", self.name, elapsed, len(response_text)) self.status = \"idle\" return { \"action_id\": task.get(\"action_id\"), \"agent_id\": self.id, \"agent_name\": self.name, \"agent_role\": self.role.value, \"status\": \"completed\", \"output\": response_text, \"execution_time_ms\": elapsed, \"model\": self.model, \"llm_provider\": self.provider.value, \"tokens_used\": tokens_used, } except Exception as e: elapsed = int((datetime.utcnow() - start_time).total_seconds() * 1000) logger.error(\"[%s] process() FAILED in %dms: %s\", self.name, elapsed, str(e), exc_info=True) self.status = \"error\" return { \"action_id\": task.get(\"action_id\"), \"agent_id\": self.id, \"agent_name\": self.name, \"agent_role\": self.role.value, \"status\": \"error\", \"error\": str(e), \"execution_time_ms\": elapsed, } async def _call_with_fallback(self, prompt: str) -> tuple: \"\"\"Try primary provider, fall back to the other if it fails. Executor/Reporter are Gemini-primary. If the prompt is large (>3000 chars), don't fall back to Ollama — it can't handle it. Retry Gemini instead. \"\"\" if self.provider == LLMProvider.GEMINI: try: return await self._call_gemini(prompt) except Exception as e: # For large prompts, don't fall back to Ollama — it will timeout if len(prompt) > 3000: raise Exception(f\"Gemini failed and prompt too large for Ollama fallback: {str(e)}\") logger.warning(\"[%s] Gemini failed (%s), falling back to Ollama\", self.name, str(e)) return await self._call_ollama(prompt) else: try: return await self._call_ollama(prompt) except Exception as e: logger.warning(\"[%s] Ollama failed (%s), falling back to Gemini\", self.name, str(e)) if self.gemini_api_key: return await self._call_gemini(prompt) raise Exception(f\"Both Ollama and Gemini unavailable. Last error: {str(e)}\") async def _call_ollama(self, prompt: str) -> tuple: ollama_model = os.getenv(\"OLLAMA_MODEL\", \"mistral\") logger.info(\"[%s] Calling Ollama model=%s\", self.name, ollama_model) payload = { \"model\": ollama_model, \"prompt\": f\"{self.system_prompt}\\n\\n{prompt}\", \"stream\": False, \"temperature\": 0.7, \"num_predict\": 2048, } try: async with httpx.AsyncClient(timeout=120.0) as client: response = await client.post(f\"{self.ollama_url}/api/generate\", json=payload) response.raise_for_status() result = response.json() response_text = result.get(\"response\", \"\").strip() if not response_text: raise Exception(\"Ollama returned empty response\") logger.info(\"[%s] Ollama OK — %d chars\", self.name, len(response_text)) return response_text, {\"input\": len(prompt.split()), \"output\": len(response_text.split())} except httpx.ConnectError: raise Exception(f\"Cannot connect to Ollama at {self.ollama_url}\") except httpx.TimeoutException: raise Exception(f\"Ollama timed out after 120s\") except httpx.HTTPStatusError as e: raise Exception(f\"Ollama HTTP {e.response.status_code}: {e.response.text[:200]}\") except Exception as e: raise Exception(str(e)) async def _call_gemini(self, prompt: str) -> tuple: if not self.gemini_api_key: raise Exception(\"No Gemini API key configured\") logger.info(\"[%s] Calling Gemini model=%s\", self.name, self.gemini_model) payload = { \"contents\": [{\"parts\": [{\"text\": self.system_prompt}, {\"text\": prompt}]}], \"generationConfig\": {\"temperature\": 0.7, \"maxOutputTokens\": 2048}, } try: async with httpx.AsyncClient(timeout=180.0) as client: response = await client.post( f\"https://generativelanguage.googleapis.com/v1beta/models/{self.gemini_model}:generateContent\", json=payload, params={\"key\": self.gemini_api_key}, ) logger.info(\"[%s] Gemini HTTP %d\", self.name, response.status_code) if response.status_code in (429, 503): import asyncio # Rate limit or service overload — retry with backoff for wait in (10, 30, 60): logger.warning(\"[%s] Gemini %d — waiting %ds before retry...\", self.name, response.status_code, wait) await asyncio.sleep(wait) async with httpx.AsyncClient(timeout=180.0) as client: response = await client.post( f\"https://generativelanguage.googleapis.com/v1beta/models/{self.gemini_model}:generateContent\", json=payload, params={\"key\": self.gemini_api_key}, ) logger.info(\"[%s] Gemini retry HTTP %d\", self.name, response.status_code) if response.status_code == 200: break if response.status_code in (401, 403): body = response.json().get(\"error\", {}) raise Exception(f\"Gemini auth error {response.status_code}: {body.get('message', '')}\") if response.status_code != 200: raise Exception(f\"Gemini HTTP {response.status_code}: {response.text[:200]}\") result = response.json() block_reason = result.get(\"promptFeedback\", {}).get(\"blockReason\", \"\") if block_reason: raise Exception(f\"Gemini blocked prompt: {block_reason}\") candidates = result.get(\"candidates\", []) if not candidates: raise Exception(f\"Gemini no candidates. Response: {str(result)[:300]}\") candidate = candidates[0] finish_reason = candidate.get(\"finishReason\", \"\") if finish_reason == \"SAFETY\": raise Exception(\"Gemini SAFETY block\") # Skip thought=True parts (Gemini 2.5 thinking mode) parts = candidate.get(\"content\", {}).get(\"parts\", []) response_text = \"\".join( p.get(\"text\", \"\") for p in parts if not p.get(\"thought\", False) ).strip() if not response_text: raise Exception(f\"Gemini empty text. finish={finish_reason} parts={str(parts)[:200]}\") logger.info(\"[%s] Gemini OK — %d chars (finish=%s)\", self.name, len(response_text), finish_reason) usage = result.get(\"usageMetadata\", {}) return response_text, { \"input\": usage.get(\"promptTokenCount\", len(prompt.split())), \"output\": usage.get(\"candidatesTokenCount\", len(response_text.split())), } except httpx.TimeoutException: raise Exception(\"Gemini timed out after 180s\") except httpx.ConnectError: raise Exception(\"Cannot connect to Gemini API\") except httpx.HTTPStatusError as e: raise Exception(f\"Gemini HTTP error: {str(e)}\") except Exception: raise # re-raise as-is, no double-wrapping def get_status(self) -> Dict[str, Any]: return { \"id\": self.id, \"name\": self.name, \"role\": self.role.value, \"status\": self.status, \"last_task_id\": self.last_task_id, \"execution_count\": self.execution_count, \"capabilities\": self.capabilities, \"llm_provider\": self.provider.value, \"model\": self.model, } AGENTS = { \"analyzer\": Agent( id=\"agent-001\", name=\"Analyzer\", role=AgentRole.ANALYZER, provider=LLMProvider.OLLAMA, capabilities=[\"request_analysis\", \"context_evaluation\", \"requirement_breakdown\"], ), \"executor\": Agent( id=\"agent-002\", name=\"Executor\", role=AgentRole.EXECUTOR, provider=LLMProvider.GEMINI, capabilities=[\"code_editing\", \"action_execution\", \"task_orchestration\"], ), \"validator\": Agent( id=\"agent-003\", name=\"Validator\", role=AgentRole.VALIDATOR, provider=LLMProvider.OLLAMA, capabilities=[\"result_validation\", \"security_checks\", \"compliance_verification\"], ), \"reporter\": Agent( id=\"agent-004\", name=\"Reporter\", role=AgentRole.REPORTER, provider=LLMProvider.GEMINI, capabilities=[\"result_formatting\", \"report_generation\", \"summary_creation\"], ), } def get_agent(agent_id: str) -> Optional[Agent]: for agent in AGENTS.values(): if agent.id == agent_id: return agent return None def get_agent_by_role(role: str) -> Optional[Agent]: return AGENTS.get(role) def get_agents_by_role(role: AgentRole) -> List[Agent]: return [a for a in AGENTS.values() if a.role == role] def get_all_agent_statuses() -> Dict[str, Dict[str, Any]]: return {agent_id: agent.get_status() for agent_id, agent in AGENTS.items()}"
+      - generic [ref=e348]:
+        - generic [ref=e349]:
+          - generic [ref=e350]:
+            - img [ref=e352]
+            - generic [ref=e354]:
+              - generic [ref=e355]: AI Code Assistant
+              - generic [ref=e356]: Analyzer → Executor → Validator → Reporter · ArmorIQ RBAC
+          - generic [ref=e357]: 📄 backend/app/agents.py
+        - generic [ref=e358]:
+          - generic [ref=e360]: Select or import a file, then describe a change. The agent pipeline will generate a diff for your review.
+          - generic [ref=e727]: Opened backend/app/agents.py · 15.6 KB
+        - generic [ref=e361]:
+          - generic [ref=e362]:
+            - textbox "Describe a code change… (Enter to send)" [ref=e728]
+            - button "Send" [disabled] [ref=e364]
+          - generic [ref=e365]: Enter to send · Shift+Enter new line · Ctrl+S save

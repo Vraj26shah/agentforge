@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { Task } from '../App'
 
 const STEPS = [
@@ -73,6 +74,8 @@ function Step({
   blocked,
   index,
   total,
+  logs,
+  error,
 }: {
   step: typeof STEPS[0]
   active: boolean
@@ -80,8 +83,12 @@ function Step({
   blocked: boolean
   index: number
   total: number
+  logs?: string[]
+  error?: string
 }) {
-  const stateColor = blocked
+  const [logsOpen, setLogsOpen] = useState(false)
+
+  const stateColor = blocked || error
     ? '#ef4444'
     : done
     ? step.color
@@ -89,7 +96,7 @@ function Step({
     ? step.color
     : '#1e293b'
 
-  const textColor = blocked
+  const textColor = blocked || error
     ? '#fca5a5'
     : done || active
     ? '#e2e8f0'
@@ -104,15 +111,15 @@ function Step({
           height: 28,
           borderRadius: '50%',
           border: `2px solid ${stateColor}`,
-          background: done || active ? `${stateColor}22` : 'rgba(14,20,40,.8)',
+          background: done || active || error ? `${stateColor}22` : 'rgba(14,20,40,.8)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           transition: 'all .4s',
-          boxShadow: active && !blocked ? `0 0 12px ${stateColor}55` : 'none',
+          boxShadow: (active || error) && !blocked ? `0 0 12px ${stateColor}55` : 'none',
           flexShrink: 0,
         }}>
-          {blocked ? (
+          {blocked || error ? (
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2.5">
               <path d="M6 18L18 6M6 6l12 12"/>
             </svg>
@@ -127,7 +134,7 @@ function Step({
           )}
         </div>
         {index < total - 1 && (
-          <div style={{ width: 2, flex: 1, minHeight: 36, background: done ? `linear-gradient(to bottom, ${step.color}55, ${step.color}22)` : 'rgba(30,41,59,.8)', transition: 'background .5s' }} />
+          <div style={{ width: 2, flex: 1, minHeight: 36, background: done || error ? `linear-gradient(to bottom, ${stateColor}55, ${stateColor}22)` : 'rgba(30,41,59,.8)', transition: 'background .5s' }} />
         )}
       </div>
 
@@ -136,7 +143,7 @@ function Step({
         <div style={{
           padding: '14px 18px',
           borderRadius: 10,
-          border: `1px solid ${done || active || blocked ? stateColor + '40' : 'rgba(30,41,59,.8)'}`,
+          border: `1px solid ${done || active || error ? stateColor + '40' : 'rgba(30,41,59,.8)'}`,
           background: done || active ? `${stateColor}0a` : 'rgba(12,16,32,.7)',
           transition: 'all .4s',
         }}>
@@ -144,34 +151,125 @@ function Step({
             <span style={{ fontSize: '.87rem', fontWeight: 700, color: textColor, transition: 'color .4s' }}>
               {step.label}
             </span>
-            {blocked && (
+            {error ? (
+              <span className="badge badge-red">ERROR</span>
+            ) : blocked ? (
               <span className="badge badge-red">BLOCKED</span>
-            )}
-            {done && !blocked && (
+            ) : done && !blocked ? (
               <span className="badge badge-green">Done</span>
-            )}
-            {active && !done && !blocked && (
+            ) : active && !done && !blocked ? (
               <span className="badge badge-blue">In Progress</span>
-            )}
+            ) : null}
           </div>
           <p style={{ margin: 0, fontSize: '.78rem', color: '#475569', lineHeight: 1.5 }}>{step.desc}</p>
+
+          {/* Logs and Error sections */}
+          {(logs?.length || error) && (
+            <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid rgba(99,102,241,.1)' }}>
+              {error && (
+                <div style={{
+                  padding: '8px 10px',
+                  background: 'rgba(239,68,68,.08)',
+                  border: '1px solid rgba(239,68,68,.2)',
+                  borderRadius: 6,
+                  fontSize: '.75rem',
+                  color: '#fca5a5',
+                  marginBottom: logs?.length ? 8 : 0,
+                  fontFamily: 'JetBrains Mono, monospace',
+                  wordBreak: 'break-word',
+                }}>
+                  ❌ {error}
+                </div>
+              )}
+
+              {logs?.length ? (
+                <div>
+                  <button
+                    onClick={() => setLogsOpen(!logsOpen)}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: '#7c86a8',
+                      fontSize: '.75rem',
+                      cursor: 'pointer',
+                      padding: 0,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 4,
+                      transition: 'color .2s',
+                    }}
+                    onMouseOver={e => (e.currentTarget.style.color = '#a5b4fc')}
+                    onMouseOut={e => (e.currentTarget.style.color = '#7c86a8')}
+                  >
+                    <span>{logsOpen ? '▼' : '▶'}</span>
+                    <span>View logs ({logs.length})</span>
+                  </button>
+                  {logsOpen && (
+                    <div style={{
+                      marginTop: 6,
+                      padding: '8px 10px',
+                      background: 'rgba(30,41,59,.5)',
+                      border: '1px solid rgba(99,102,241,.1)',
+                      borderRadius: 6,
+                      maxHeight: 120,
+                      overflowY: 'auto',
+                      fontSize: '.7rem',
+                      color: '#94a3b8',
+                      fontFamily: 'JetBrains Mono, monospace',
+                      lineHeight: 1.4,
+                    }}>
+                      {logs.map((log, i) => (
+                        <div key={i}>✓ {log}</div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : null}
+            </div>
+          )}
         </div>
       </div>
     </div>
   )
 }
 
-function TaskPipelineCard({ task }: { task: Task }) {
+function TaskPipelineCard({ task, sessionId }: { task: Task; sessionId: string }) {
   const isBlocked   = task.status === 'blocked'
   const isCompleted = task.status === 'completed'
   const isProcessing= task.status === 'processing'
+  const hasError    = task.status === 'error'
 
   // Progress mapping: 0→step 0, 25→step 4 (analyzer), 50→step 5 (executor), 75→step 6 (validator), 100→step 7 (reporter)
   let activeStepIdx = 0
   const progress = task.progress || 0
 
-  if (isBlocked) {
-    activeStepIdx = 3 // Policy enforcement failed
+  // Extract error/blocked step from reason if present (e.g., "analyzer: timeout" or "verify: policy violation")
+  let errorStepIdx: number | null = null
+  let errorMessage = ''
+  if (task.blocked_reason) {
+    const parts = task.blocked_reason.split(':')
+    if (parts.length >= 2) {
+      const stepName = parts[0].trim().toLowerCase()
+      errorMessage = parts.slice(1).join(':').trim()
+
+      const stepMap: Record<string, number> = {
+        'submit': 0,
+        'armoriq-capture': 1,
+        'armoriq-token': 2,
+        'verify': 3,
+        'analyzer': 4,
+        'executor': 5,
+        'validator': 6,
+        'reporter': 7,
+        'spacetime': 8,
+        'system': 0, // System errors start from submit
+      }
+      errorStepIdx = stepMap[stepName] ?? null
+    }
+  }
+
+  if (isBlocked || hasError) {
+    activeStepIdx = errorStepIdx ?? 3 // Default to policy enforcement if no step specified
   } else if (isCompleted) {
     activeStepIdx = STEPS.length - 1 // All steps done
   } else if (isProcessing) {
@@ -186,20 +284,45 @@ function TaskPipelineCard({ task }: { task: Task }) {
     }
   }
 
+  // Mock logs data (in production, this would come from backend)
+  const stepLogs: Record<number, string[]> = {
+    0: ['Request payload received', 'Content validation passed'],
+    1: ['Extracting tool actions', 'Building intent hash', 'Creating merkle root'],
+    2: ['Generating JWT token', 'HMAC-SHA256 signature created'],
+    3: ['Policy check started', 'Validating action tokens', 'Security policies applied'],
+    4: ['Calling Ollama (Mistral)', 'Request analysis completed', 'Actions identified'],
+    5: ['Calling Gemini Flash API', 'Executing approved actions', 'Processing complete'],
+    6: ['Validating execution results', 'Compliance check passed', 'Results verified'],
+    7: ['Formatting report', 'Generating output summary', 'Report generated'],
+    8: ['Persisting to SpacetimeDB', 'WebSocket broadcast sent', 'Sync complete'],
+  }
+
   return (
     <div className="glass-card" style={{ padding: 24 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
         <div>
-          <p style={{ margin: '0 0 4px', fontFamily: 'JetBrains Mono, monospace', fontSize: '.72rem', color: '#475569' }}>
-            {task.id}
-          </p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+            <p style={{ margin: 0, fontFamily: 'JetBrains Mono, monospace', fontSize: '.72rem', color: '#475569' }}>
+              {task.id}
+            </p>
+            <span style={{
+              fontSize: '.65rem',
+              padding: '2px 8px',
+              borderRadius: 999,
+              background: task.user_id === sessionId ? 'rgba(99,102,241,.12)' : 'rgba(148,163,184,.07)',
+              color: task.user_id === sessionId ? '#818cf8' : '#475569',
+              border: '1px solid rgba(99,102,241,.15)',
+            }}>
+              {task.user_id === sessionId ? 'Your task' : `User ${task.user_id?.slice(0, 6) ?? '?'}`}
+            </span>
+          </div>
           <p className="line-clamp-2" style={{ margin: 0, fontSize: '.9rem', fontWeight: 600, color: '#e2e8f0', maxWidth: 400 }}>
             {task.user_request}
           </p>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
           <span className={`badge ${
-            isBlocked ? 'badge-red' : isCompleted ? 'badge-green' : isProcessing ? 'badge-blue' : 'badge-purple'
+            isBlocked ? 'badge-red' : hasError ? 'badge-red' : isCompleted ? 'badge-green' : isProcessing ? 'badge-blue' : 'badge-purple'
           }`}>
             {task.status}
           </span>
@@ -210,23 +333,30 @@ function TaskPipelineCard({ task }: { task: Task }) {
       </div>
 
       <div>
-        {STEPS.map((step, i) => (
-          <Step
-            key={step.id}
-            step={step}
-            index={i}
-            total={STEPS.length}
-            done={i < activeStepIdx && !isBlocked}
-            active={i === activeStepIdx && isProcessing}
-            blocked={isBlocked && i === 3}
-          />
-        ))}
+        {STEPS.map((step, i) => {
+          const hasStepError = errorStepIdx === i && (isBlocked || hasError)
+          const logs = (i <= activeStepIdx && !hasStepError) ? stepLogs[i] : undefined
+
+          return (
+            <Step
+              key={step.id}
+              step={step}
+              index={i}
+              total={STEPS.length}
+              done={i < activeStepIdx && !isBlocked && !hasError && !hasStepError}
+              active={i === activeStepIdx && isProcessing && !hasStepError}
+              blocked={hasStepError}
+              logs={logs}
+              error={hasStepError ? errorMessage : undefined}
+            />
+          )
+        })}
       </div>
     </div>
   )
 }
 
-export default function TaskFlow({ tasks }: { tasks: Task[] }) {
+export default function TaskFlow({ tasks, sessionId }: { tasks: Task[]; sessionId: string }) {
   const activeTasks = tasks.filter(t => t.status !== 'queued')
 
   return (
@@ -268,7 +398,7 @@ export default function TaskFlow({ tasks }: { tasks: Task[] }) {
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-          {activeTasks.map(task => <TaskPipelineCard key={task.id} task={task} />)}
+          {activeTasks.map(task => <TaskPipelineCard key={task.id} task={task} sessionId={sessionId} />)}
         </div>
       )}
     </div>
