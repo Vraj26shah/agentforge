@@ -269,6 +269,16 @@ class TaskOrchestrator:
                 f"FILE CONTENTS:\n{safe_file_ctx}\n\n"
                 f"List numbered sub-tasks for the Executor, referencing specific lines/functions."
             )
+        elif file_context and task_type == "file_question":
+            # Don't send the full file to the tiny Ollama analyzer model — it can't
+            # handle large files and produces garbage that corrupts the whole pipeline.
+            # Executor (Gemini) will receive the full file directly.
+            analyzer_desc = (
+                f"{history_section}"
+                f"A user wants an explanation/analysis of a source file.\n\n"
+                f"REQUEST: {user_request}\n\n"
+                f"List 2-3 concise points about what the Executor should cover in the answer."
+            )
         else:
             file_section = f"FILE CONTEXT:\n{safe_file_ctx}\n\n" if file_context else ""
             analyzer_desc = (
@@ -411,13 +421,14 @@ class TaskOrchestrator:
                 f"{execution.get('output', '')}"
             )
         elif file_context:
+            # Do NOT include validator output here — the validator uses the small Ollama
+            # model which produces unreliable text for file questions, and including it
+            # causes the Reporter (Gemini) to echo that garbage as the final answer.
             reporter_desc = (
                 f"Format a final answer for the user. The user asked: {user_request}\n\n"
-                f"Based on the file and the executor's analysis below, write a clear, "
-                f"direct, well-structured response the user can read in the chat:\n\n"
+                f"Write a clear, direct, well-structured response based only on the analysis below.\n\n"
                 f"EXECUTOR ANSWER:\n{execution.get('output','')}\n\n"
-                f"VALIDATION:\n{validation.get('output','')}\n\n"
-                f"Write in markdown. Reference specific functions, lines, or code from the file."
+                f"Write in markdown. Be specific — reference actual functions, classes, and logic."
             )
         else:
             reporter_desc = (

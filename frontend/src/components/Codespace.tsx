@@ -362,10 +362,11 @@ export default function Codespace({ tasks, role, sessionId }: Props) {
   const [suggestion, setSuggestion] = useState<{ content: string; diffLines: DiffLine[] } | null>(null)
   const [applying, setApplying]     = useState(false)
 
-  const editorRef    = useRef<HTMLTextAreaElement>(null)
-  const gutterRef    = useRef<HTMLDivElement>(null)
-  const chatEndRef   = useRef<HTMLDivElement>(null)
-  const importRef    = useRef<HTMLInputElement>(null)
+  const editorRef       = useRef<HTMLTextAreaElement>(null)
+  const gutterRef       = useRef<HTMLDivElement>(null)
+  const chatEndRef      = useRef<HTMLDivElement>(null)
+  const importRef       = useRef<HTMLInputElement>(null)
+  const handledTaskIds  = useRef(new Set<string>())
   // Captures the path that was stored in localStorage at mount time — used by the
   // one-shot effect below to silently reload file content without touching chat.
   const mountPathRef = useRef(selectedPath)
@@ -458,6 +459,12 @@ export default function Codespace({ tasks, role, sessionId }: Props) {
   // Fallback: HTTP polling every 2s in case WebSocket messages are missed.
 
   const handleTaskResult = useCallback((task: Task, taskId: string) => {
+    // Prevent WebSocket and HTTP polling from both firing for the same completed task.
+    const terminal = task.status === 'completed' || task.status === 'blocked' || task.status === 'error'
+    if (!terminal) return
+    if (handledTaskIds.current.has(taskId)) return
+    handledTaskIds.current.add(taskId)
+
     const fp = task.file_path  // always tag replies with which file they're about
 
     if (task.status === 'completed' && task.task_type === 'code_suggestion') {
