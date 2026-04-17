@@ -3,13 +3,15 @@ services:
   - type: web
     name: agentforge-backend
     env: docker
-    dockerfilePath: ./backend/Dockerfile.prod
+    dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
-    plan: starter
+    plan: free
     healthCheckPath: /health
     envVars:
+      - key: PORT
+        value: 8000
       - key: OLLAMA_API_URL
-        value: http://host.docker.internal:11434
+        value: http://localhost:11434
       - key: OLLAMA_MODEL
         value: qwen2:0.5b
       - key: USE_OLLAMA
@@ -20,47 +22,38 @@ services:
         sync: false
       - key: ARMORIQ_SECRET_KEY
         sync: false
+      - key: ARMORIQ_USER_ID
+        value: agentforge-user
+      - key: ARMORIQ_AGENT_ID
+        value: agentforge-agent
+      - key: ARMORIQ_CONTEXT_ID
+        value: default
+      - key: ARMORIQ_API_ENDPOINT
+        value: https://api.armoriq.ai/v1
+      - key: ARMORIQ_TOKEN_VALIDITY
+        value: 600
       - key: SPACETIMEDB_URL
-        fromService:
-          type: web
-          name: agentforge-spacetimedb
-          property: host
+        value: http://localhost:3000
+      - key: SPACETIMEDB_HOST
+        value: localhost
+      - key: SPACETIMEDB_PORT
+        value: 3000
       - key: LOG_LEVEL
         value: INFO
       - key: PYTHONUNBUFFERED
         value: "1"
+      - key: CODESPACE_ROOT
+        value: /app
 
   # Frontend
   - type: web
     name: agentforge-frontend
-    env: docker
-    dockerfilePath: ./frontend/Dockerfile.prod
-    dockerContext: ./frontend
-    plan: starter
-    buildCommand: npm run build
+    env: static
+    buildCommand: cd frontend && npm ci && npm run build
+    staticPublishPath: ./frontend/dist
+    plan: free
     envVars:
       - key: VITE_BACKEND_URL
-        fromService:
-          type: web
-          name: agentforge-backend
-          property: host
+        value: https://agentforge-backend.onrender.com
       - key: VITE_SPACETIMEDB_URL
-        fromService:
-          type: web
-          name: agentforge-spacetimedb
-          property: host
-
-  # SpacetimeDB
-  - type: web
-    name: agentforge-spacetimedb
-    env: docker
-    dockerImage: clockworklabs/spacetime:latest
-    plan: starter
-    disk:
-      name: spacetimedb-data
-      mountPath: /var/lib/spacetimedb
-      sizeGB: 10
-
-databases:
-  - name: spacetimedb-data
-    plan: starter
+        value: http://localhost:3001

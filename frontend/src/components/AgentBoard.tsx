@@ -112,13 +112,12 @@ function AgentCard({ agent, sessionId, logs = [] }: { agent: Agent; sessionId: s
         <span style={{
           padding: '4px 10px',
           fontSize: '.7rem',
-          fontWeight: 600,
+          fontWeight: 700,
           background: meta.provider === 'gemini' ? 'rgba(34,197,94,.1)' : 'rgba(59,130,246,.1)',
           border: `1px solid ${meta.provider === 'gemini' ? 'rgba(34,197,94,.25)' : 'rgba(59,130,246,.25)'}`,
           borderRadius: 6,
           color: meta.provider === 'gemini' ? '#6ee7b7' : '#60a5fa',
           textTransform: 'capitalize',
-          fontWeight: 700,
         }}>
           🔌 {meta.provider === 'gemini' ? 'Gemini Flash' : 'Ollama'}
         </span>
