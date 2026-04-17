@@ -1,5 +1,5 @@
-# Backend-only Dockerfile for Render Web Service deployment.
-# Does NOT build the frontend — the frontend is deployed as a separate Static Site.
+# Backend-only Dockerfile for Render Web Service.
+# Root Directory on Render = "backend", so all paths are relative to backend/
 FROM python:3.11-slim
 WORKDIR /app
 
@@ -7,9 +7,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     && rm -rf /var/lib/apt/lists/*
 
-COPY backend/requirements.txt .
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY backend/app ./app/
+COPY app/ ./app/
 
 CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
