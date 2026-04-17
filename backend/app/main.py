@@ -13,6 +13,7 @@ from pydantic import BaseModel
 from typing import Optional, Dict, Any, List
 import os
 import asyncio
+import httpx
 from dotenv import load_dotenv
 import uuid
 from datetime import datetime
@@ -969,6 +970,22 @@ async def startup_event():
 
     spacetimedb_ok = await db.health_check()
     print(f"SpacetimeDB:    {'connected @ ' + db.base_url if spacetimedb_ok else 'OFFLINE — running without persistence'}")
+
+    # Keep Render free-tier container warm — ping self every 10 min
+    asyncio.create_task(_self_ping_loop())
+
+
+async def _self_ping_loop():
+    """Ping own /health endpoint every 10 minutes to prevent Render free-tier spin-down."""
+    await asyncio.sleep(60)  # Give startup 1 min before first ping
+    while True:
+        try:
+            port = os.getenv("PORT", "8000")
+            async with httpx.AsyncClient() as client:
+                await client.get(f"http://localhost:{port}/health", timeout=10)
+        except Exception:
+            pass  # Ignore errors — we're just keeping the process warm
+        await asyncio.sleep(600)  # 10 minutes
 
 @app.on_event("shutdown")
 async def shutdown_event():
