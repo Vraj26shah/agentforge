@@ -22,11 +22,14 @@ function getOrCreateSessionId(): string {
 
 const SESSION_ID = getOrCreateSessionId()
 
-// Backend base URL — read from Vite env so the browser hits the backend directly,
-// avoiding the Vite dev server proxy (which runs inside Docker and can't reach
-// a host-networked backend across Docker bridge iptables rules).
-const BACKEND_HTTP = import.meta.env.VITE_BACKEND_URL ?? 'http://localhost:8001'
-const BACKEND_WS   = BACKEND_HTTP.replace(/^http/, 'ws')
+// In production the backend serves the frontend, so the backend is always at
+// the same origin as the page. Use window.location.origin to avoid any mismatch
+// between the baked-in VITE_BACKEND_URL and the actual deployed URL.
+// In development, fall back to the env var (cross-origin localhost backend).
+const BACKEND_HTTP = import.meta.env.PROD
+  ? window.location.origin
+  : (import.meta.env.VITE_BACKEND_URL ?? 'http://localhost:8001')
+const BACKEND_WS = (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host
 
 export type UserRole = 'junior_engineer' | 'senior_developer' | 'tech_lead' | 'admin'
 
@@ -323,10 +326,11 @@ export default function App() {
     }
 
     const connect = () => {
-      // HTTP ping first — wakes the service on Render free tier before WebSocket upgrade.
-      // A sleeping service will reject the WS upgrade but responds to HTTP once awake.
+      // HTTP ping first — wakes the Render free tier service before WebSocket upgrade.
+      // Also validates we're hitting the real backend (not a static site returning HTML).
       fetch(`${BACKEND_HTTP}/health`)
-        .then(openWS)
+        .then(r => r.ok ? r.json() : Promise.reject('not ok'))
+        .then(data => data.status === 'ok' ? openWS() : Promise.reject('bad health'))
         .catch(() => {
           const delay = Math.min(5000 * Math.pow(1.5, attempt), 30000)
           attempt++
