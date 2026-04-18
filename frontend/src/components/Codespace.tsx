@@ -566,9 +566,16 @@ export default function Codespace({ tasks, role, sessionId }: Props) {
 
     } else if (task.status === 'error') {
       setAiLoading(false)
+      // Show the reporter's explanation if available (it contains useful context),
+      // otherwise fall back to blocked_reason or a generic message.
+      const errorReport = task.report ?? ''
+      const errorReason = task.blocked_reason ?? 'Unknown error in pipeline.'
+      const errorContent = errorReport
+        ? `⚠️ Agent error:\n${errorReport}`
+        : `⚠️ Agent error: ${errorReason}`
       setChatMessages(prev => [...prev, {
         role: 'assistant',
-        content: `⚠️ Agent error: ${task.blocked_reason ?? 'Unknown error in pipeline.'}`,
+        content: errorContent,
         filePath: fp, taskId,
       }])
       setPendingTaskId(null)

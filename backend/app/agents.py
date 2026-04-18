@@ -161,6 +161,8 @@ class Agent:
     _GEMINI_MODEL_CHAIN = ["gemini-2.5-flash", "gemini-1.5-flash", "gemini-2.0-flash"]
 
     async def _call_with_fallback(self, prompt: str) -> tuple:
+        use_ollama = os.getenv("USE_OLLAMA", "true").lower() in ("true", "1", "yes")
+
         if self.provider == LLMProvider.GEMINI:
             last_err: Exception = Exception("no models tried")
             for model in self._GEMINI_MODEL_CHAIN:
@@ -169,6 +171,14 @@ class Agent:
                 except Exception as e:
                     logger.warning("[%s] Gemini/%s failed: %s", self.name, model, str(e))
                     last_err = e
+
+            # Skip Ollama fallback if USE_OLLAMA=false (e.g. Render deploy without Ollama)
+            if not use_ollama:
+                raise Exception(
+                    f"All Gemini models failed and Ollama is disabled (USE_OLLAMA=false). "
+                    f"Last error: {str(last_err)}"
+                )
+
             # Truncate prompt for Ollama fallback — large prompts (>4KB) cause timeouts
             # on small models like qwen2:0.5b. Keep first 3KB to preserve instructions.
             truncated_prompt = prompt[:3000] if len(prompt) > 4000 else prompt
@@ -184,13 +194,21 @@ class Agent:
                 )
             return await self._call_ollama(truncated_prompt)
         else:
-            try:
-                return await self._call_ollama(prompt)
-            except Exception as e:
-                logger.warning("[%s] Ollama failed (%s), falling back to Gemini", self.name, str(e))
+            # Ollama-primary agents: try Ollama first, fall back to Gemini
+            if use_ollama:
+                try:
+                    return await self._call_ollama(prompt)
+                except Exception as e:
+                    logger.warning("[%s] Ollama failed (%s), falling back to Gemini", self.name, str(e))
+                    if self.gemini_api_key:
+                        return await self._call_gemini(prompt)
+                    raise Exception(f"Both Ollama and Gemini unavailable. Last error: {str(e)}")
+            else:
+                # USE_OLLAMA=false: skip Ollama entirely, go straight to Gemini
+                logger.info("[%s] USE_OLLAMA=false, using Gemini directly", self.name)
                 if self.gemini_api_key:
                     return await self._call_gemini(prompt)
-                raise Exception(f"Both Ollama and Gemini unavailable. Last error: {str(e)}")
+                raise Exception("Ollama disabled and no Gemini API key configured")
 
     async def _call_ollama(self, prompt: str) -> tuple:
         ollama_model = os.getenv("OLLAMA_MODEL", "qwen2:0.5b")

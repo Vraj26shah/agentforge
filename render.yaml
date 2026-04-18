@@ -16,7 +16,7 @@ services:
       - key: OLLAMA_MODEL
         value: qwen2:0.5b
       - key: USE_OLLAMA
-        value: true
+        value: false
       - key: GEMINI_API_KEY
         sync: false
       - key: ARMORIQ_API_KEY

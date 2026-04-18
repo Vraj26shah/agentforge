@@ -340,16 +340,18 @@ class TaskOrchestrator:
             description=executor_desc, original_request=user_request,
             context=analysis.get("output", ""), user_id=user_id,
         )
-        # Executor failure is non-fatal — if Ollama also failed, use a placeholder so
-        # the pipeline can still produce a Validator + Reporter pass.
+        # Track executor failure — the pipeline still runs Validator + Reporter to
+        # give a useful error explanation, but code_suggestion results are suppressed.
         if execution.get("status") == "error":
+            executor_failed = True
+            executor_error_msg = execution.get("error", "Unknown executor error")
             await self._broadcast_log(
                 "warning",
-                f"Executor failed ({execution.get('error', '')}), continuing with placeholder output",
+                f"Executor failed ({executor_error_msg}), continuing with placeholder output",
                 task_id,
             )
             execution["output"] = (
-                f"Executor could not complete the task due to: {execution.get('error', 'unknown error')}. "
+                f"Executor could not complete the task due to: {executor_error_msg}. "
                 f"Original request: {user_request}"
             )
             execution["status"] = "completed"
@@ -466,10 +468,20 @@ class TaskOrchestrator:
                 "error": report.get("error", "Unknown error"),
             }
 
-        # ── Persist final result ─────────────────────────────────────────────
-        final_status = "completed"
+        # ── Determine final status ────────────────────────────────────────────
+        # If the executor failed, mark the task as error rather than completed.
+        # The Reporter output will still be included so the user sees a useful message.
+        if executor_failed:
+            final_status = "error"
+            await self._broadcast_log(
+                "error",
+                f"Task {task_id} failed — Executor error: {executor_error_msg}",
+                task_id,
+            )
+        else:
+            final_status = "completed"
 
-        await self._broadcast_progress(task_id, 100, "completed", user_id)
+        await self._broadcast_progress(task_id, 100, final_status, user_id)
 
         if db:
             await db.set_result(
@@ -481,7 +493,7 @@ class TaskOrchestrator:
                     "validation": validation.get("output", "")[:1000],
                     "report": report.get("output", "")[:2000],
                 },
-                verification_status="passed",
+                verification_status="passed" if final_status == "completed" else "failed",
                 tokens_used=total_tokens,
             )
 
@@ -495,12 +507,20 @@ class TaskOrchestrator:
             "task_type": task_type,
         }
 
-        if task_type == "code_suggestion":
+        # Only generate code suggestions when the executor actually succeeded.
+        # If it failed, the reporter output is a human-readable error explanation
+        # — not valid code, so computing a diff would produce garbage.
+        if task_type == "code_suggestion" and not executor_failed:
             from .codespace import compute_diff, strip_code_fences
             raw = report.get("output", "")
             suggested = strip_code_fences(raw)
             result_payload["suggested_content"] = suggested
             result_payload["diff_lines"] = compute_diff(file_context or "", suggested)
+        elif task_type == "code_suggestion" and executor_failed:
+            # Return empty suggestion so the frontend shows the error, not a diff
+            result_payload["suggested_content"] = ""
+            result_payload["diff_lines"] = []
+            result_payload["blocked_reason"] = executor_error_msg
 
         return result_payload
 
