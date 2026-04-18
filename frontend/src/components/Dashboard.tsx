@@ -16,16 +16,16 @@ function getStepName(progress: number, status: string): string {
 }
 
 const RISK_COLORS: Record<string, { color: string; bg: string; border: string }> = {
-  low:      { color: '#6ee7b7', bg: 'rgba(16,185,129,.1)',  border: 'rgba(16,185,129,.2)' },
-  medium:   { color: '#fde68a', bg: 'rgba(245,158,11,.1)',  border: 'rgba(245,158,11,.2)' },
-  high:     { color: '#fb923c', bg: 'rgba(249,115,22,.1)',  border: 'rgba(249,115,22,.2)' },
-  critical: { color: '#f87171', bg: 'rgba(239,68,68,.1)',   border: 'rgba(239,68,68,.2)'  },
+  low: { color: '#6ee7b7', bg: 'rgba(16,185,129,.1)', border: 'rgba(16,185,129,.2)' },
+  medium: { color: '#fde68a', bg: 'rgba(245,158,11,.1)', border: 'rgba(245,158,11,.2)' },
+  high: { color: '#fb923c', bg: 'rgba(249,115,22,.1)', border: 'rgba(249,115,22,.2)' },
+  critical: { color: '#f87171', bg: 'rgba(239,68,68,.1)', border: 'rgba(239,68,68,.2)' },
 }
 
 const POLICY_COLORS: Record<string, { color: string; bg: string; border: string }> = {
-  allow:            { color: '#6ee7b7', bg: 'rgba(16,185,129,.1)',  border: 'rgba(16,185,129,.2)' },
-  block:            { color: '#f87171', bg: 'rgba(239,68,68,.1)',   border: 'rgba(239,68,68,.2)'  },
-  require_approval: { color: '#fde68a', bg: 'rgba(245,158,11,.1)',  border: 'rgba(245,158,11,.2)' },
+  allow: { color: '#6ee7b7', bg: 'rgba(16,185,129,.1)', border: 'rgba(16,185,129,.2)' },
+  block: { color: '#f87171', bg: 'rgba(239,68,68,.1)', border: 'rgba(239,68,68,.2)' },
+  require_approval: { color: '#fde68a', bg: 'rgba(245,158,11,.1)', border: 'rgba(245,158,11,.2)' },
 }
 
 const SAMPLE_REQUESTS = [
@@ -38,10 +38,10 @@ const SAMPLE_REQUESTS = [
 function StatusIcon({ status }: { status: string }) {
   const icons: Record<string, { path: string; color: string }> = {
     completed: { color: '#6ee7b7', path: 'M5 13l4 4L19 7' },
-    blocked:   { color: '#fca5a5', path: 'M6 18L18 6M6 6l12 12' },
-    processing:{ color: '#93c5fd', path: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' },
-    error:     { color: '#fde68a', path: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z' },
-    queued:    { color: '#c4b5fd', path: 'M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
+    blocked: { color: '#fca5a5', path: 'M6 18L18 6M6 6l12 12' },
+    processing: { color: '#93c5fd', path: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' },
+    error: { color: '#fde68a', path: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z' },
+    queued: { color: '#c4b5fd', path: 'M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
   }
   const { color, path } = icons[status] ?? icons.queued
   return (
@@ -172,17 +172,17 @@ function TaskCard({ task, isOwn, sessionId }: { task: Task; isOwn: boolean; sess
 
   const borderMap: Record<string, string> = {
     completed: 'rgba(16,185,129,.25)',
-    blocked:   'rgba(239,68,68,.25)',
-    processing:'rgba(59,130,246,.25)',
-    error:     'rgba(239,68,68,.25)',
-    queued:    'rgba(99,102,241,.15)',
+    blocked: 'rgba(239,68,68,.25)',
+    processing: 'rgba(59,130,246,.25)',
+    error: 'rgba(239,68,68,.25)',
+    queued: 'rgba(99,102,241,.15)',
   }
   const badgeMap: Record<string, string> = {
     completed: 'badge-green',
-    blocked:   'badge-red',
-    processing:'badge-blue',
-    error:     'badge-red',
-    queued:    'badge-purple',
+    blocked: 'badge-red',
+    processing: 'badge-blue',
+    error: 'badge-red',
+    queued: 'badge-purple',
   }
 
   return (
@@ -310,10 +310,10 @@ export default function Dashboard({
   onTaskCreated: (task: Task) => void
 }) {
   const [userRequest, setUserRequest] = useState('')
-  const [context,     setContext]     = useState('')
-  const [submitting,  setSubmitting]  = useState(false)
-  const [error,       setError]       = useState('')
-  const [success,     setSuccess]     = useState(false)
+  const [context, setContext] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -451,15 +451,15 @@ export default function Dashboard({
               {submitting ? (
                 <>
                   <svg className="spin-slow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" opacity=".3"/>
-                    <path d="M12 3a9 9 0 019 9"/>
+                    <path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" opacity=".3" />
+                    <path d="M12 3a9 9 0 019 9" />
                   </svg>
                   Processing...
                 </>
               ) : (
                 <>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                    <line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" />
                   </svg>
                   Submit as {role.replace(/_/g, ' ')}
                 </>
@@ -475,12 +475,12 @@ export default function Dashboard({
           </h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {[
-              { label: 'LLM Engine',          value: 'Ollama / Mistral',          ok: true },
-              { label: 'Security Layer',       value: 'ArmorIQ Intent Verify',      ok: true },
-              { label: 'RBAC Enforcement',     value: 'Analyzer + ArmorIQ',         ok: true },
-              { label: 'Database',             value: 'SpacetimeDB (real-time)',    ok: true },
-              { label: 'Active Role',          value: role.replace(/_/g, ' '),      ok: true },
-              { label: 'Agents Available',     value: `${agents.length} agents`,   ok: agents.length > 0 },
+              { label: 'LLM Engine', value: 'Ollama / Mistral', ok: true },
+              { label: 'Security Layer', value: 'ArmorIQ Intent Verify', ok: true },
+              { label: 'RBAC Enforcement', value: 'Analyzer + ArmorIQ', ok: true },
+              { label: 'Database', value: 'SpacetimeDB (real-time)', ok: true },
+              { label: 'Active Role', value: role.replace(/_/g, ' '), ok: true },
+              { label: 'Agents Available', value: `${agents.length} agents`, ok: agents.length > 0 },
             ].map(row => (
               <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '.82rem' }}>
                 <span style={{ color: '#64748b' }}>{row.label}</span>
@@ -514,7 +514,7 @@ export default function Dashboard({
           <div style={{ textAlign: 'center', padding: '60px 0' }}>
             <div style={{ width: 52, height: 52, borderRadius: 14, background: 'rgba(99,102,241,.1)', border: '1px solid rgba(99,102,241,.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px' }}>
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
               </svg>
             </div>
             <p style={{ color: '#475569', margin: 0, fontSize: '.9rem', fontWeight: 500 }}>No tasks yet</p>

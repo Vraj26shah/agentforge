@@ -1,15 +1,16 @@
 services:
-  # ── Backend: Python FastAPI (Docker) ──────────────────────────────────────────
   - type: web
-    name: agentforges-api
+    name: agentforges
     env: docker
-    dockerfilePath: ./backend/Dockerfile.render
+    dockerfilePath: ./Dockerfile
     dockerContext: .
     plan: free
     healthCheckPath: /health
     envVars:
       - key: PORT
         value: 8000
+      - key: VITE_BACKEND_URL
+        value: https://agentforges.onrender.com
       - key: OLLAMA_API_URL
         value: http://localhost:11434
       - key: OLLAMA_MODEL
@@ -44,13 +45,3 @@ services:
         value: "1"
       - key: CODESPACE_ROOT
         value: /app
-
-  # ── Frontend: Static Site ─────────────────────────────────────────────────────
-  - type: web
-    name: agentforges
-    env: static
-    buildCommand: cd frontend && npm ci && npm run build
-    staticPublishPath: ./frontend/dist
-    envVars:
-      - key: VITE_BACKEND_URL
-        value: https://agentforges-api.onrender.com

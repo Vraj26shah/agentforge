@@ -1,7 +1,10 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import type { Task, UserRole } from '../App'
 
-const BACKEND = import.meta.env.VITE_BACKEND_URL ?? 'http://localhost:8001'
+// Must match App.tsx: in production (monolith), backend = same origin.
+const BACKEND = import.meta.env.PROD
+  ? window.location.origin
+  : (import.meta.env.VITE_BACKEND_URL ?? 'http://localhost:8001')
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -327,6 +330,8 @@ interface Props { tasks: Task[]; role: UserRole; sessionId: string }
 
 export default function Codespace({ tasks, role, sessionId }: Props) {
   const [tree, setTree]                       = useState<FileNode[]>([])
+  const [treeLoaded, setTreeLoaded]           = useState(false)
+  const [treeError, setTreeError]             = useState(false)
   const [selectedPath, setSelectedPath] = useState<string | null>(() => {
     try { return localStorage.getItem(`agentforge_path_${sessionId}`) } catch { return null }
   })
@@ -374,10 +379,15 @@ export default function Codespace({ tasks, role, sessionId }: Props) {
   // ── load tree ───────────────────────────────────────────────────────────────
 
   const refreshTree = useCallback(() => {
+    setTreeError(false)
     fetch(`${BACKEND}/api/codespace/tree`)
-      .then(r => r.json())
-      .then(d => setTree(d.tree || []))
-      .catch(() => {})
+      .then(r => {
+        if (!r.ok) throw new Error('not ok')
+        return r.json()
+      })
+      .then(d => { setTree(d.tree || []); setTreeError(false) })
+      .catch(() => { setTreeError(true) })
+      .finally(() => { setTreeLoaded(true) })
   }, [])
 
   useEffect(() => { refreshTree() }, [refreshTree])
@@ -433,6 +443,39 @@ export default function Codespace({ tasks, role, sessionId }: Props) {
       })
       .catch(() => {})
       .finally(() => setLoadingFile(false))
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps — intentionally mount-only
+
+  // On mount: validate that a stale pendingTaskId from localStorage is still alive.
+  // If the backend restarted and lost the task, clear the stuck loading state.
+  useEffect(() => {
+    const staleId = pendingTaskId
+    if (!staleId) return
+    let cancelled = false
+    const timer = setTimeout(() => {
+      fetch(`${BACKEND}/api/tasks/${staleId}`)
+        .then(r => {
+          if (!r.ok) throw new Error('not found')
+          return r.json()
+        })
+        .then(task => {
+          if (cancelled) return
+          // If task already terminal but handleTaskResult hasn't fired, clear stale state
+          const terminal = task.status === 'completed' || task.status === 'blocked' || task.status === 'error'
+          if (!terminal) return // still in progress, let polling handle it
+        })
+        .catch(() => {
+          // Task doesn't exist on the backend anymore — clear stuck state
+          if (cancelled) return
+          setPendingTaskId(null)
+          setAiLoading(false)
+          setChatMessages(prev => [...prev, {
+            role: 'system' as const,
+            content: 'Previous AI request was lost (backend restarted). You can send a new request.',
+            filePath: selectedPath ?? undefined,
+          }])
+        })
+    }, 2000) // Give WebSocket 2s to reconnect first
+    return () => { cancelled = true; clearTimeout(timer) }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps — intentionally mount-only
 
   // ── filter messages for current file ────────────────────────────────────────
@@ -540,15 +583,41 @@ export default function Codespace({ tasks, role, sessionId }: Props) {
     handleTaskResult(task, pendingTaskId)
   }, [tasks, pendingTaskId, handleTaskResult])
 
-  // HTTP polling fallback — starts 3s after submission, polls every 2s
+  // HTTP polling fallback — starts 3s after submission, polls every 2s, gives up after 60s
   useEffect(() => {
     if (!pendingTaskId) return
     let stopped = false
+    let pollCount = 0
+    const MAX_POLLS = 30 // 30 × 2s = 60s timeout
 
     const poll = async () => {
+      pollCount++
+      if (pollCount > MAX_POLLS) {
+        // Give up — backend likely lost this task
+        setPendingTaskId(null)
+        setAiLoading(false)
+        setChatMessages(prev => [...prev, {
+          role: 'system' as const,
+          content: 'AI request timed out — the backend may have restarted. Please try again.',
+          filePath: selectedPath ?? undefined,
+        }])
+        return
+      }
       try {
         const res  = await fetch(`${BACKEND}/api/tasks/${pendingTaskId}`)
-        if (!res.ok) return
+        if (!res.ok) {
+          // 404 = task lost after backend restart
+          if (res.status === 404) {
+            setPendingTaskId(null)
+            setAiLoading(false)
+            setChatMessages(prev => [...prev, {
+              role: 'system' as const,
+              content: 'AI request was lost (backend restarted). Please try again.',
+              filePath: selectedPath ?? undefined,
+            }])
+          }
+          return
+        }
         const task: Task = await res.json()
         if (stopped) return
         const terminal = task.status !== 'queued' && task.status !== 'processing'
@@ -564,11 +633,13 @@ export default function Codespace({ tasks, role, sessionId }: Props) {
         if (stopped) { clearInterval(interval); return }
         poll()
       }, 2000)
-      return () => clearInterval(interval)
+      // Store interval ID for cleanup
+      const cleanup = () => clearInterval(interval)
+      ;(delay as any).__cleanup = cleanup
     }, 3000)
 
     return () => { stopped = true; clearTimeout(delay) }
-  }, [pendingTaskId, handleTaskResult])
+  }, [pendingTaskId, handleTaskResult]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── open file ───────────────────────────────────────────────────────────────
 
@@ -891,13 +962,27 @@ export default function Codespace({ tasks, role, sessionId }: Props) {
 
           {/* File list */}
           <div style={{ flex: 1, overflowY: 'auto', padding: '4px 0' }}>
-            {tree.length === 0
-              ? <div style={{ padding: 12, fontSize: '.72rem', color: '#334155' }}>Loading…</div>
-              : tree.map(n => (
-                  <FileTreeNode key={n.path} node={n} depth={0}
-                    selectedPath={selectedPath} onSelect={openFile} />
-                ))
-            }
+            {!treeLoaded ? (
+              <div style={{ padding: 12, fontSize: '.72rem', color: '#475569' }}>Loading…</div>
+            ) : treeError ? (
+              <div style={{ padding: 12, textAlign: 'center' }}>
+                <div style={{ fontSize: '.72rem', color: '#f87171', marginBottom: 6 }}>Could not load file tree</div>
+                <button onClick={refreshTree} style={{
+                  padding: '4px 12px', borderRadius: 5, border: '1px solid rgba(99,102,241,.2)',
+                  background: 'rgba(99,102,241,.1)', color: '#818cf8',
+                  fontSize: '.68rem', fontWeight: 600, cursor: 'pointer',
+                }}>
+                  ↻ Retry
+                </button>
+              </div>
+            ) : tree.length === 0 ? (
+              <div style={{ padding: 12, fontSize: '.72rem', color: '#334155' }}>No files found</div>
+            ) : (
+              tree.map(n => (
+                <FileTreeNode key={n.path} node={n} depth={0}
+                  selectedPath={selectedPath} onSelect={openFile} />
+              ))
+            )}
           </div>
         </div>
 
@@ -1252,6 +1337,25 @@ export default function Codespace({ tasks, role, sessionId }: Props) {
                   ))}
                 </div>
                 <span style={{ fontSize: '.7rem', color: '#475569' }}>Agent pipeline running…</span>
+                <button
+                  onClick={() => {
+                    setPendingTaskId(null)
+                    setAiLoading(false)
+                    setChatMessages(prev => [...prev, {
+                      role: 'system' as const,
+                      content: 'AI request cancelled.',
+                      filePath: selectedPath ?? undefined,
+                    }])
+                  }}
+                  style={{
+                    padding: '2px 10px', borderRadius: 5, border: 'none',
+                    background: 'rgba(248,113,113,.12)', color: '#f87171',
+                    fontSize: '.65rem', fontWeight: 700, cursor: 'pointer',
+                    marginLeft: 4, transition: 'all .15s',
+                  }}
+                >
+                  Cancel
+                </button>
               </div>
             )}
             <div ref={chatEndRef} />

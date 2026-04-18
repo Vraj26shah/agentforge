@@ -22,11 +22,12 @@ function getOrCreateSessionId(): string {
 
 const SESSION_ID = getOrCreateSessionId()
 
-// When deployed as a static site the frontend origin ≠ backend origin.
-// Always use VITE_BACKEND_URL so the static site correctly reaches the
-// separate backend Web Service on Render (or localhost in dev).
-const BACKEND_HTTP = import.meta.env.VITE_BACKEND_URL ?? 'http://localhost:8001'
-// Derive WebSocket URL from the backend HTTP URL (http→ws, https→wss)
+// Single-service deploy: backend serves frontend at the same origin.
+// In production, use window.location so HTTP + WebSocket always hit the same host.
+// In dev, fall back to VITE_BACKEND_URL for cross-origin localhost backend.
+const BACKEND_HTTP = import.meta.env.PROD
+  ? window.location.origin
+  : (import.meta.env.VITE_BACKEND_URL ?? 'http://localhost:8001')
 const BACKEND_WS = BACKEND_HTTP.replace(/^https/, 'wss').replace(/^http/, 'ws')
 
 export type UserRole = 'junior_engineer' | 'senior_developer' | 'tech_lead' | 'admin'
